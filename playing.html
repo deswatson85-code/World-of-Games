@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Now Playing</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body.sub-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            background-color: var(--main-bg);
+        }
+        .playing-card {
+            width: 100%;
+            max-width: 800px;
+            background: var(--table-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .error-msg {
+            color: #ff4444;
+            background: rgba(255,0,0,0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body class="sub-page">
+
+    <div class="playing-card">
+        <h1 id="playingTitle" style="font-family: 'Audiowide'; color: #2ea44f; margin-bottom: 5px;">LOADING...</h1>
+        <p id="debugInfo" style="color: #888; font-size: 12px;"></p>
+        
+        <div id="contentArea">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>GAME NAME</th>
+                        <th>YEAR</th>
+                        <th>PLAT</th>
+                        <th>PROGRESS</th>
+                        <th>STAT</th>
+                    </tr>
+                </thead>
+                <tbody id="playingBody"></tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button onclick="window.close()" class="back-btn" style="padding: 10px 25px;">✖ CLOSE VIEW</button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const tbody = document.getElementById('playingBody');
+            const title = document.getElementById('playingTitle');
+            const debug = document.getElementById('debugInfo');
+
+            // 1. Get ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('id');
+
+            // 2. Get Data from LocalStorage (Make sure this matches your main key)
+            const rawData = localStorage.getItem('worldOfGamesData');
+            const games = JSON.parse(rawData) || [];
+
+            debug.innerText = `Searching for ID: ${gameId} in ${games.length} games...`;
+
+            if (!gameId) {
+                title.innerText = "Error";
+                tbody.innerHTML = `<tr><td colspan="6" class="error-msg">No Game ID provided in URL.</td></tr>`;
+                return;
+            }
+
+            // 3. Find the specific game
+            // We use .toString() to ensure we match "1156" with 1156 correctly
+            const game = games.find(g => g[0].toString() === gameId.toString());
+
+            if (game) {
+                title.innerText = game[1].toUpperCase();
+                
+                // Achievement Math
+                const totalAch = parseInt(game[9]) || 0;
+                const earnedAch = parseInt(game[10]) || 0;
+                const percentage = totalAch > 0 ? Math.round((earnedAch / totalAch) * 100) : 0;
+                
+                const statusClass = "status-" + (game[11] || "backlog").toLowerCase();
+
+                tbody.innerHTML = `
+                    <tr>
+                        <td>${game[0]}</td>
+                        <td style="font-weight:bold; color: #fff;">${game[1]}</td>
+                        <td style="color: var(--year-color);">${game[2]}</td>
+                        <td style="color: var(--clickable-blue);">${game[7]}</td>
+                        <td>
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width: ${percentage}%"></div>
+                                <span class="progress-text">${earnedAch}/${totalAch}</span>
+                            </div>
+                        </td>
+                        <td class="${statusClass}">${game[11]}</td>
+                    </tr>
+                `;
+                debug.innerText = "Game loaded successfully.";
+            } else {
+                title.innerText = "Not Found";
+                tbody.innerHTML = `<tr><td colspan="6" class="error-msg">Game ID ${gameId} not found in your database.</td></tr>`;
+            }
+
+            // Apply Theme
+            const savedTheme = localStorage.getItem('preferredTheme');
+            if (savedTheme && savedTheme !== 'default') {
+                document.body.classList.add('theme-' + savedTheme);
+            }
+        };
+    </script>
+</body>
+</html>

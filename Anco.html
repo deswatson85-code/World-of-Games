@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anco United FC - Interactive Web Portal</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2b6cb0;
+            --accent-color: #d69e2e;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --light-gray: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: var(--primary-color);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        nav button:hover, nav button.active {
+            background-color: var(--secondary-color);
+            border-bottom: 4px solid var(--accent-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 1rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        th {
+            background-color: #edf2f7;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .highlight-row {
+            background-color: #fefcbf !important;
+            font-weight: bold;
+        }
+
+        /* Score Inputs Styling */
+        .score-input {
+            width: 45px;
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+        }
+
+        .score-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.2);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: white;
+            min-width: 25px;
+            text-align: center;
+        }
+
+        .badge-win { background-color: #38a169; }
+        .badge-draw { background-color: #a0aec0; }
+        .badge-loss { background-color: #e53e3e; }
+        .badge-pending { background-color: #cbd5e0; color: #4a5568; }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background-color: var(--primary-color);
+            color: white;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Anco United FC</h1>
+        <p>Interactive League Tracker & Portal</p>
+    </header>
+
+    <nav>
+        <button class="tab-btn active" onclick="openTab('table')">Live League Table</button>
+        <button class="tab-btn" onclick="openTab('fixtures')">Enter Scores & Fixtures</button>
+    </nav>
+
+    <div class="container">
+        
+        <!-- League Table Tab -->
+        <div id="table" class="tab-content active">
+            <div class="card">
+                <h2>Division 3 Standings</h2>
+                <p class="subtitle">Table updates automatically when match scores are entered in the Fixtures tab.</p>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th style="text-align: left;">Club</th>
+                                <th>P</th>
+                                <th>W</th>
+                                <th>D</th>
+                                <th>L</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>GD</th>
+                                <th>PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="league-table-body">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fixtures & Score Input Tab -->
+        <div id="fixtures" class="tab-content">
+            <div class="card">
+                <h2>Match Results & Score Entry</h2>
+                <p class="subtitle">Type scores in the input boxes below to calculate live table changes.</p>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th style="text-align: right;">Home Team</th>
+                                <th>Score</th>
+                                <th style="text-align: left;">Away Team</th>
+                                <th>Outcome</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fixtures-body">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Anco United Football Club. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Initial League Teams
+        const teams = [
+            'ANCO UNITED', 'BRISTOL', 'BIRMINGHAM', 'CARDIFF', 
+            'FULHAM', 'HUDDERSFIELD', 'NORTHAMPTON', 'PRESTON', 
+            'READING', 'ROTHERHAM', 'SHREWSBURY', 'WIGAN'
+        ];
+
+        // Default Fixtures built from your Excel sheet
+        const matches = [
+            { date: '10/08/2025', home: 'ANCO UNITED', away: 'BRISTOL', homeScore: 1, awayScore: 0 },
+            { date: '17/08/2025', home: 'BIRMINGHAM', away: 'ANCO UNITED', homeScore: 0, awayScore: 0 },
+            { date: '20/08/2025', home: 'FULHAM', away: 'ANCO UNITED', homeScore: 0, awayScore: 1 },
+            { date: '23/08/2025', home: 'CARDIFF', away: 'ANCO UNITED', homeScore: 1, awayScore: 2 },
+            { date: '25/08/2025', home: 'ANCO UNITED', away: 'SHREWSBURY', homeScore: 3, awayScore: 2 },
+            { date: '01/09/2025', home: 'ANCO UNITED', away: 'READING', homeScore: 1, awayScore: 0 },
+            { date: '08/09/2025', home: 'FULHAM', away: 'ANCO UNITED', homeScore: '', awayScore: '' },
+            { date: '13/09/2025', home: 'HUDDERSFIELD', away: 'ANCO UNITED', homeScore: '', awayScore: '' },
+            { date: '19/09/2025', home: 'ANCO UNITED', away: 'PRESTON', homeScore: '', awayScore: '' },
+            { date: '27/09/2025', home: 'ANCO UNITED', away: 'WIGAN', homeScore: '', awayScore: '' },
+            { date: '29/09/2025', home: 'NORTHAMPTON', away: 'ANCO UNITED', homeScore: '', awayScore: '' },
+            { date: '06/10/2025', home: 'ANCO UNITED', away: 'ROTHERHAM', homeScore: '', awayScore: '' }
+        ];
+
+        function renderFixtures() {
+            const tbody = document.getElementById('fixtures-body');
+            tbody.innerHTML = '';
+
+            matches.forEach((m, index) => {
+                let badge = '<span class="badge badge-pending">-</span>';
+                if (m.homeScore !== '' && m.awayScore !== '') {
+                    const hs = parseInt(m.homeScore);
+                    const as = parseInt(m.awayScore);
+                    if (hs > as) badge = '<span class="badge badge-win">H</span>';
+                    else if (as > hs) badge = '<span class="badge badge-loss">A</span>';
+                    else badge = '<span class="badge badge-draw">D</span>';
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${m.date}</td>
+                    <td style="text-align: right; font-weight: 600;">${m.home}</td>
+                    <td>
+                        <input type="number" min="0" class="score-input" value="${m.homeScore}" oninput="updateScore(${index}, 'home', this.value)">
+                        -
+                        <input type="number" min="0" class="score-input" value="${m.awayScore}" oninput="updateScore(${index}, 'away', this.value)">
+                    </td>
+                    <td style="text-align: left; font-weight: 600;">${m.away}</td>
+                    <td>${badge}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateScore(index, teamType, val) {
+            if (teamType === 'home') {
+                matches[index].homeScore = val !== '' ? parseInt(val) : '';
+            } else {
+                matches[index].awayScore = val !== '' ? parseInt(val) : '';
+            }
+            calculateAndRenderTable();
+            renderFixtures();
+        }
+
+        function calculateAndRenderTable() {
+            // Initialize stats table
+            const stats = {};
+            teams.forEach(team => {
+                stats[team] = { name: team, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 };
+            });
+
+            // Process scores
+            matches.forEach(m => {
+                if (m.homeScore !== '' && m.awayScore !== '' && !isNaN(m.homeScore) && !isNaN(m.awayScore)) {
+                    const hs = parseInt(m.homeScore);
+                    const as = parseInt(m.awayScore);
+
+                    if (stats[m.home] && stats[m.away]) {
+                        stats[m.home].p++;
+                        stats[m.away].p++;
+                        stats[m.home].gf += hs;
+                        stats[m.home].ga += as;
+                        stats[m.away].gf += as;
+                        stats[m.away].ga += hs;
+
+                        if (hs > as) {
+                            stats[m.home].w++;
+                            stats[m.home].pts += 3;
+                            stats[m.away].l++;
+                        } else if (as > hs) {
+                            stats[m.away].w++;
+                            stats[m.away].pts += 3;
+                            stats[m.home].l++;
+                        } else {
+                            stats[m.home].d++;
+                            stats[m.home].pts += 1;
+                            stats[m.away].d++;
+                            stats[m.away].pts += 1;
+                        }
+                    }
+                }
+            });
+
+            // Calculate GD and sort
+            const sortedTable = Object.values(stats).map(t => {
+                t.gd = t.gf - t.ga;
+                return t;
+            }).sort((a, b) => {
+                if (b.pts !== a.pts) return b.pts - a.pts;
+                if (b.gd !== a.gd) return b.gd - a.gd;
+                return b.gf - a.gf;
+            });
+
+            // Render Table
+            const tbody = document.getElementById('league-table-body');
+            tbody.innerHTML = '';
+            sortedTable.forEach((t, i) => {
+                const row = document.createElement('tr');
+                if (t.name === 'ANCO UNITED') row.classList.add('highlight-row');
+                
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td style="text-align: left;">${t.name}</td>
+                    <td>${t.p}</td>
+                    <td>${t.w}</td>
+                    <td>${t.d}</td>
+                    <td>${t.l}</td>
+                    <td>${t.gf}</td>
+                    <td>${t.ga}</td>
+                    <td>${t.gd > 0 ? '+' + t.gd : t.gd}</td>
+                    <td><strong>${t.pts}</strong></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function openTab(tabName) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Initialize on page load
+        renderFixtures();
+        calculateAndRenderTable();
+    </script>
+</body>
+</html>

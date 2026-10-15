@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World of Games - Database</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="Images/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Roboto:wght@400;500&display=swap" rel="stylesheet">    
+</head>
+<body>
+    
+    <div class="dashboard-container">
+        <aside class="sidebar-entry">
+            <header class="sidebar-header">
+                <img src="Images/favicon.png" alt="Logo" class="sidebar-logo">
+            </header>
+
+            <div id="lastEntryNotice" class="last-entry-alert" style="display:none;">
+                <strong style="color: #60a5fa;"></strong> 
+                <span id="lastGameName"></span>
+            </div>
+
+            <div class="form-container">
+                <input type="hidden" id="editIndex">
+                <h2 id="formTitle">System Entry</h2>
+
+                <div id="statsBox" class="stats-mini-box">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px;"></div>
+                    <div class="stat-row"><span>TOTAL:</span> <span id="gameCounter">0</span></div>
+                    <div class="stat-row"><span>COMPLETED:</span> <span id="completedCounter">0</span></div>
+                    <div class="stat-row"><span>BACKLOG:</span> <span id="backlogCounter">0</span></div>
+                    <div class="stat-row"><span>PLAYING:</span> <span id="playingCount" class="count-badge">0</span></div>
+                </div>
+
+                <div id="randomPickDisplay" style="margin-top: 10px; display: none; padding: 8px; background: rgba(245, 158, 11, 0.1); border: 1px dashed #f59e0b; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #f59e0b; font-family: 'Audiowide';">CURRENT MISSION:</div>
+                    <div id="pickedGameName" style="font-size: 13px; color: #ffffff; font-weight: bold; margin-top: 2px;"></div>
+                </div>
+
+                <div class="progress-section">
+                    <div class="progress-container">
+                        <div id="overallProgressBar" class="progress-bar" style="width: 0%"></div>
+                        <span id="progressPercent" class="progress-text">0%</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 12px; text-align: center;">
+                    <a href="stats.html" style="color: #58a6ff; text-decoration: none; font-size: 11px; font-family: 'Audiowide'; letter-spacing: 1px;">
+                        📊 VIEW LAUNCHER STATS
+                    </a>        
+                </div>
+                <div class="csv-import-container" style="display: inline-flex; gap: 10px; align-items: center;">
+                <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleCSVUpload(event)">
+                <button onclick="document.getElementById('csvFileInput').click()" class="action-btn">
+                📥 Import CSV
+                </button>
+                </div>
+                <!-- Hidden file input triggered by the visible button -->
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+                <button class="btn-action" onclick="document.getElementById('importFile').click()" style="background: #238636; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                📁 Import Backup</button>
+                
+                <!-- Form Fields -->
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Game Name</label>
+                    <input type="text" id="inName" onblur="this.value = toTitleCase(this.value)">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group"><label>Year</label><input type="text" id="inYear"></div>
+                    <div class="form-group"><label>Publisher</label><input type="text" id="inPub"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Genre</label>
+                    <select id="inGenre">
+                        <option value="">-- Select --</option>
+                        <option value="Adventure">Adventure</option>
+                        <option value="Educational">Educational</option>
+                        <option value="Driving">Driving</option>
+                        <option value="Fighting">Fighting</option>
+                        <option value="Platformer">Platformer</option>
+                        <option value="Puzzle">Puzzle</option>
+                        <option value="Other">Other</option>
+                        <option value="Racing">Racing</option>
+                        <option value="Role Playing">Role Playing</option>
+                        <option value="Shooter">Shooter</option>
+                        <option value="Simulation">Simulation</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Strategy">Strategy</option>
+                        <option value="Survival">Survival</option>
+                    </select>
+                </div>
+
+                <div class="form-group"><label>Series</label><input type="text" id="inSeries"></div>
+
+                <!-- Platform Entries Container -->
+                <div id="platformEntriesContainer">
+                    <div class="platform-entry-block" style="border-bottom: 1px dashed #30363d; padding-bottom: 10px; margin-bottom: 10px;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Launch</label>
+                                <select id="inLaunch" class="inLaunch">
+                                    <option value="">-- Select --</option>
+                                    <option value="3D Realms">3D Realms</option>
+                                    <option value="Amazon Games">Amazon Games</option>
+                                    <option value="EA Play">EA Play</option>
+                                    <option value="Epic Games">Epic Games</option>
+                                    <option value="Game Pass">Game Pass</option>
+                                    <option value="GOG Galaxy">GOG Galaxy</option>
+                                    <option value="Legacy Games">Legacy Games</option>
+                                    <option value="Microsoft Store">Microsoft Store</option>
+                                    <option value="PSN">PSN</option>					
+                                    <option value="Rockstar Games">Rockstar Games</option>
+                                    <option value="Steam Games">Steam Games</option>
+                                    <option value="Ubisoft Connect">Ubisoft Connect</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Platform</label>
+                                <select id="inPlat" class="inPlat">
+                                    <option value="">-- Select --</option>
+                                    <option value="Atari 2600">Atari 2600</option>
+                                    <option value="Atari 600/800/XL">Atari 600/800/XL</option>
+                                    <option value="Atari ST/STE">Atari ST/STE</option>
+                                    <option value="Microsoft Xbox">Microsoft Xbox</option>
+                                    <option value="Microsoft Xbox 360">Microsoft Xbox 360</option>
+                                    <option value="Microsoft Xbox One">Microsoft Xbox One</option>
+                                    <option value="NES">NES</option>
+                                    <option value="Nintendo 64">Nintendo 64</option>
+                                    <option value="Nintendo DS">Nintendo DS</option>
+                                    <option value="Nintendo GameCube">Nintendo GameCube</option>
+                                    <option value="Nintendo Wii">Nintendo Wii</option>
+                                    <option value="PSP">PSP</option>
+                                    <option value="Sega Dreamcast">Sega Dreamcast</option>
+                                    <option value="Sega Megadrive">Sega Megadrive</option>
+                                    <option value="Super Nintendo">Super Nintendo</option>
+                                    <option value="Sony Playstation 1">Sony Playstation 1</option>
+                                    <option value="Sony Playstation 2">Sony Playstation 2</option>
+                                    <option value="Sony Playstation 3">Sony Playstation 3</option>
+                                    <option value="Sony Playstation 4">Sony Playstation 4</option>
+                                    <option value="Sony Playstation 5">Sony Playstation 5</option>
+                                    <option value="Windows">Windows</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group"><label>Date Finished</label><input type="text" id="inDate" class="inDate"></div>
+                       
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;"><label>Achieve.</label><input type="number" id="inAch" class="inAch"></div>
+                            <div class="form-group" style="flex: 1;"><label>Earned</label><input type="number" id="inEarned" class="inEarned"></div>
+                        </div>
+                    </div>
+                </div> <!-- Properly closes platformEntriesContainer -->
+
+                <button type="button" class="btn-secondary" onclick="addPlatformRow()" style="margin-bottom: 15px; width: 100%;">+ Add Another Platform/Launcher</button>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="inStatus">
+                        <option value="Backlog">Backlog</option>
+                        <option value="Playing">Playing</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+
+                <button id="addBtn" class="btn-add" onclick="addGame()">Save to Local Memory</button>
+                <button id="updateBtn" class="btn-update" onclick="updateGame()" style="display:none;">Update Entry</button>
+                <button id="randomBtn" class="btn-random" onclick="pickRandomBacklog()">🎲 PICK RANDOM BACKLOG</button>
+
+                <div class="era-section" style="margin-top: 15px;">
+                    <div style="font-family: 'Audiowide'; color: #8b949e; font-size: 11px; margin-bottom: 10px; letter-spacing: 1px;">BROWSE BY ERA</div>
+                    <div class="era-grid">
+                        <button onclick="filterByDecade(1980, 1989)">80s</button>
+                        <button onclick="filterByDecade(1990, 1999)">90s</button>
+                        <button onclick="filterByDecade(2000, 2009)">00s</button>
+                        <button onclick="filterByDecade(2010, 2019)">10s</button>
+                        <button onclick="filterByDecade(2020, 2029)">Modern</button>
+                        <button onclick="resetSearch()">All</button>
+                    </div>
+                </div>
+            </div> <!-- Properly closes form-container -->
+        </aside> <!-- Properly closes sidebar-entry -->
+
+        <main class="main-content">
+            <header class="header-actions">
+                <nav class="top-nav">
+                    <a href="playing-list.html" target="_blank" class="btn-secondary">View Playing</a>
+                    <a href="completed.html" target="_blank" class="btn-secondary">View Completed</a>
+                    <a href="backlog.html" target="_blank" class="btn-secondary">View Backlog</a>
+                  </nav>   
+                  
+                  <div class="search-bar">
+                    <button class="btn-secondary" onclick="exportData()">Backup</button>
+                    <button class="btn-secondary" onclick="resetSearch()">Clear Filters</button>
+                    <button class="btn-secondary" onclick="clearForm()">Clear Fields</button>            
+                
+                    <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Search Database...">
+                </div>
+            </header>
+
+            <div class="table-container">
+                <table id="gameTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Game Name</th>
+                            <th>Year</th>
+                            <th>Pub</th>
+                            <th>GENRE</th>
+                            <th>Series</th>
+                            <th>Launch</th>
+                            <th>Plat</th>
+                            <th>Done</th>
+                            <th>Ach</th>
+                            <th>Stat</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div id="pagination" class="pagination"></div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

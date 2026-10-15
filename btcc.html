@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTCC Championship Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1322;
+            color: #f1f5f9;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.90);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .table-input:focus {
+            outline: 2px solid #3b82f6;
+            background-color: #1e293b;
+        }
+        .badge-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 22px;
+            width: 52px;
+            border-radius: 3px;
+        }
+        /* Custom scrollbar for modal */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-r from-red-600 to-red-700 text-white font-extrabold text-2xl px-3.5 py-1 rounded shadow-md tracking-wider italic font-[Teko]">
+                    BTCC
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white leading-none">1997 Super Touring Tracker</h1>
+                    <p class="text-xs text-slate-400 mt-0.5">24-Race Championship Dashboard & Standings</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="exportData()" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> Export
+                </button>
+                <button onclick="resetData()" class="px-3 py-1.5 text-xs font-semibold bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-800/60 rounded shadow-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> Reset Season
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- LEFT COLUMN: All 24 Race Schedule -->
+            <section class="lg:col-span-7 flex flex-col">
+                <div class="glass-panel rounded-xl shadow-xl overflow-hidden border border-slate-800">
+                    <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-flag-checkered text-amber-400"></i>
+                            <h2 class="font-bold text-slate-100 uppercase tracking-wider text-xs">Full 24-Race Schedule</h2>
+                        </div>
+                        <span id="completion-badge" class="text-xs bg-blue-950 text-blue-300 px-2.5 py-1 rounded-full font-medium border border-blue-800/60">
+                            6 / 24 Completed
+                        </span>
+                    </div>
+
+                    <!-- 24 Races List -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="bg-slate-900/95 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+                                <tr>
+                                    <th class="py-2.5 px-3 text-center w-10">Rnd</th>
+                                    <th class="py-2.5 px-3">Track Name</th>
+                                    <th class="py-2.5 px-3 text-center w-14">Laps</th>
+                                    <th class="py-2.5 px-3 text-center w-20">Complete</th>
+                                    <th class="py-2.5 px-3 text-right pr-4">Time</th>
+                                    <th class="py-2.5 px-3 text-center w-12">Edit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedule-tbody" class="divide-y divide-slate-800/60 font-medium">
+                                <!-- All 24 Rows Rendered Dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: Standings & Points Allocation -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+
+                <!-- Points Allocation Legend Table (Top Right) -->
+                <section>
+                    <div class="glass-panel rounded-xl shadow-xl overflow-hidden border border-slate-800">
+                        <div class="bg-slate-900/90 px-4 py-2 border-b border-slate-800 text-center">
+                            <h3 class="font-bold text-xs uppercase text-slate-300 tracking-wider">Points Distribution</h3>
+                        </div>
+                        <div class="p-3">
+                            <div class="grid grid-cols-5 gap-1.5 text-center text-xs">
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-amber-400 text-[10px]">1st</span><span class="font-black text-white">15</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-300 text-[10px]">2nd</span><span class="font-black text-white">12</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-amber-600 text-[10px]">3rd</span><span class="font-black text-white">10</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-400 text-[10px]">4th</span><span class="font-black text-white">8</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-400 text-[10px]">5th</span><span class="font-black text-white">6</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-400 text-[10px]">6th</span><span class="font-black text-white">5</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-400 text-[10px]">7th</span><span class="font-black text-white">4</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-400 text-[10px]">8th</span><span class="font-black text-white">3</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-400 text-[10px]">9th</span><span class="font-black text-white">2</span></div>
+                                <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800"><span class="block font-bold text-slate-400 text-[10px]">10th</span><span class="font-black text-white">1</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Driver Standings Table -->
+                <section>
+                    <div class="glass-panel rounded-xl shadow-xl overflow-hidden border border-slate-800">
+                        <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-trophy text-amber-400"></i>
+                                <h2 class="font-bold text-slate-100 uppercase tracking-wider text-xs">Championship Standings</h2>
+                            </div>
+                            <span class="text-[11px] text-slate-400 italic">Official Drivers</span>
+                        </div>
+
+                        <div class="p-2 overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-slate-400 border-b border-slate-800 text-[10px] uppercase font-bold">
+                                        <th class="pb-2 text-center w-8">Pos</th>
+                                        <th class="pb-2 text-center w-16">Team</th>
+                                        <th class="pb-2 pl-2">Driver</th>
+                                        <th class="pb-2 text-right pr-3">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="standings-tbody" class="divide-y divide-slate-800/40">
+                                    <!-- Dynamic Driver Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Round Counter Footer -->
+                        <div class="bg-slate-900/90 border-t border-slate-800 py-2.5 px-4 text-center">
+                            <p id="rounds-completed-text" class="text-xs font-bold text-slate-300 uppercase tracking-widest">
+                                After: 6 Rounds
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="results-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-slate-800/90 px-5 py-3 border-b border-slate-700 flex justify-between items-center">
+                <div>
+                    <h3 id="modal-round-title" class="text-base font-bold text-white">Round Results</h3>
+                    <p class="text-xs text-slate-400">Assign top 10 positions for championship points</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-3 flex-grow">
+                <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/60 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-300">Quick Tools:</span>
+                    <div class="flex gap-2">
+                        <button onclick="autoAssignDefaultTop10()" class="px-2.5 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white font-medium rounded transition">
+                            Apply Top 10 Presets
+                        </button>
+                        <button onclick="clearPositions()" class="px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition">
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5" id="modal-drivers-list">
+                    <!-- Driver options injected dynamically -->
+                </div>
+            </div>
+
+            <div class="bg-slate-800/80 px-5 py-3 border-t border-slate-700 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-3.5 py-1.5 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition">
+                    Cancel
+                </button>
+                <button onclick="saveModalResults()" class="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded shadow-md transition">
+                    Save Round & Update Standings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // High Quality SVG Manufacturer Badges
+        const SVG_BADGES = {
+            Honda: `<div class="badge-icon bg-red-700 border border-red-600 shadow-sm" title="Honda">
+                        <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                            <path d="M4 3h16v18H4V3zm2 2v14h12V5H6zm2.5 2h2v4.5h3V7h2v10h-2v-4.5h-3V17h-2V7z"/>
+                        </svg>
+                    </div>`,
+            Renault: `<div class="badge-icon bg-amber-400 border border-amber-300 shadow-sm" title="Renault">
+                        <svg class="w-4 h-4 fill-slate-950" viewBox="0 0 24 24">
+                            <path d="M12 2L4 12l8 10 8-10L12 2zm0 3.8L17.2 12 12 18.2 6.8 12 12 5.8z"/>
+                        </svg>
+                    </div>`,
+            Audi: `<div class="badge-icon bg-slate-200 border border-slate-300 shadow-sm" title="Audi">
+                        <svg class="w-9 h-3.5" viewBox="0 0 100 30" fill="none" stroke="#dc2626" stroke-width="3.5">
+                            <circle cx="20" cy="15" r="11"/>
+                            <circle cx="40" cy="15" r="11"/>
+                            <circle cx="60" cy="15" r="11"/>
+                            <circle cx="80" cy="15" r="11"/>
+                        </svg>
+                    </div>`,
+            Volvo: `<div class="badge-icon bg-blue-800 border border-blue-600 shadow-sm" title="Volvo">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <circle cx="11" cy="13" r="8"/>
+                            <path d="M16 8l5-5m0 0h-4m4 0v4" stroke-linecap="round"/>
+                        </svg>
+                    </div>`,
+            Nissan: `<div class="badge-icon bg-slate-900 border border-slate-700 shadow-sm" title="Nissan">
+                        <svg class="w-9 h-3.5" viewBox="0 0 80 24">
+                            <circle cx="40" cy="12" r="10" fill="none" stroke="#ef4444" stroke-width="3"/>
+                            <rect x="10" y="8" width="60" height="8" fill="#ef4444" rx="1"/>
+                            <text x="40" y="14" font-size="6" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">NISSAN</text>
+                        </svg>
+                    </div>`,
+            Peugeot: `<div class="badge-icon bg-blue-950 border border-blue-800 shadow-sm" title="Peugeot">
+                        <svg class="w-4 h-4 fill-amber-400" viewBox="0 0 24 24">
+                            <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 4.5a2 2 0 012 2c0 1.5-1.5 2.5-2 3.5 1 .5 2 1.5 2 3a2.5 2.5 0 01-5 0v-6a2.5 2.5 0 013-2.5z"/>
+                        </svg>
+                    </div>`,
+            Vauxhall: `<div class="badge-icon bg-red-800 border border-red-700 shadow-sm" title="Vauxhall">
+                        <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                            <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1 4h2v3l3 2-1 2-2-1v2l3 1-1 2-2-1v3h-2V6z"/>
+                        </svg>
+                    </div>`,
+            Ford: `<div class="badge-icon bg-blue-700 border border-blue-500 shadow-sm" title="Ford">
+                        <svg class="w-9 h-3.5" viewBox="0 0 60 24">
+                            <ellipse cx="30" cy="12" rx="26" ry="10" fill="none" stroke="white" stroke-width="2"/>
+                            <text x="30" y="14" font-size="9" font-style="italic" font-weight="extrabold" fill="white" text-anchor="middle" dominant-baseline="middle">Ford</text>
+                        </svg>
+                    </div>`
+        };
+
+        // Drivers database initialized with exact screenshot scores
+        const DRIVERS = [
+            { id: 1, name: "Des Watson", team: "Honda", initPts: 90 },
+            { id: 2, name: "Alain Menu", team: "Renault", initPts: 71 },
+            { id: 3, name: "Jason Plato", team: "Renault", initPts: 66 },
+            { id: 4, name: "Frank Biela", team: "Audi", initPts: 39 },
+            { id: 5, name: "Rickard Rydell", team: "Volvo", initPts: 37 },
+            { id: 6, name: "Gabriele Tarquini", team: "Honda", initPts: 36 },
+            { id: 7, name: "David Leslie", team: "Nissan", initPts: 22 },
+            { id: 8, name: "John Bentcliffe", team: "Audi", initPts: 20 },
+            { id: 9, name: "Kelvin Burt", team: "Volvo", initPts: 15 },
+            { id: 10, name: "Tim Harvey", team: "Peugeot", initPts: 3 },
+            { id: 11, name: "Derek Warwick", team: "Vauxhall", initPts: 2 },
+            { id: 12, name: "Will Hoy", team: "Ford", initPts: 1 },
+            { id: 13, name: "John Cleland", team: "Vauxhall", initPts: 0 },
+            { id: 14, name: "Paul Radisich", team: "Ford", initPts: 0 },
+            { id: 15, name: "Anthony Reid", team: "Nissan", initPts: 0 },
+            { id: 16, name: "Patrick Watts", team: "Peugeot", initPts: 0 }
+        ];
+
+        // 24 Full BTCC Races Schedule
+        const INITIAL_SCHEDULE = [
+            { id: 1, track: "Donington Park (GP)", laps: 18, complete: true, time: "31.26.92", results: { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, 10:10 } },
+            { id: 2, track: "Donington Park (GP)", laps: 18, complete: true, time: "30.22.46", results: { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, 10:10 } },
+            { id: 3, track: "Silverstone International", laps: 20, complete: true, time: "29.35.20", results: { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, 10:10 } },
+            { id: 4, track: "Silverstone International", laps: 20, complete: true, time: "29.27.12", results: { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, 10:10 } },
+            { id: 5, track: "Thruxton", laps: 20, complete: true, time: "25.51.28", results: { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, 10:10 } },
+            { id: 6, track: "Thruxton", laps: 20, complete: true, time: "26.38.38", results: { 1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, 10:10 } },
+            { id: 7, track: "Brands Hatch Indy", laps: 38, complete: false, time: "", results: {} },
+            { id: 8, track: "Brands Hatch Indy", laps: 38, complete: false, time: "", results: {} },
+            { id: 9, track: "Oulton Park", laps: 27, complete: false, time: "", results: {} },
+            { id: 10, track: "Oulton Park", laps: 27, complete: false, time: "", results: {} },
+            { id: 11, track: "Donington Park (Short)", laps: 25, complete: false, time: "", results: {} },
+            { id: 12, track: "Donington Park (Short)", laps: 25, complete: false, time: "", results: {} },
+            { id: 13, track: "Croft", laps: 25, complete: false, time: "", results: {} },
+            { id: 14, track: "Croft", laps: 25, complete: false, time: "", results: {} },
+            { id: 15, track: "Knockhill", laps: 35, complete: false, time: "", results: {} },
+            { id: 16, track: "Knockhill", laps: 35, complete: false, time: "", results: {} },
+            { id: 17, track: "Snetterton", laps: 23, complete: false, time: "", results: {} },
+            { id: 18, track: "Snetterton", laps: 23, complete: false, time: "", results: {} },
+            { id: 19, track: "Thruxton", laps: 20, complete: false, time: "", results: {} },
+            { id: 20, track: "Thruxton", laps: 20, complete: false, time: "", results: {} },
+            { id: 21, track: "Brands Hatch Indy", laps: 38, complete: false, time: "", results: {} },
+            { id: 22, track: "Brands Hatch Indy", laps: 38, complete: false, time: "", results: {} },
+            { id: 23, track: "Silverstone International", laps: 20, complete: false, time: "", results: {} },
+            { id: 24, track: "Silverstone International", laps: 20, complete: false, time: "", results: {} }
+        ];
+
+        const POINTS_MAP = { 1: 15, 2: 12, 3: 10, 4: 8, 5: 6, 6: 5, 7: 4, 8: 3, 9: 2, 10: 1 };
+
+        let schedule = [];
+        let activeRoundId = null;
+
+        window.onload = function() {
+            loadSavedData();
+            renderSchedule();
+            updateStandings();
+        };
+
+        function loadSavedData() {
+            const saved = localStorage.getItem('btcc_schedule_v3');
+            if (saved) {
+                try {
+                    schedule = JSON.parse(saved);
+                } catch(e) {
+                    schedule = JSON.parse(JSON.stringify(INITIAL_SCHEDULE));
+                }
+            } else {
+                schedule = JSON.parse(JSON.stringify(INITIAL_SCHEDULE));
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('btcc_schedule_v3', JSON.stringify(schedule));
+        }
+
+        function renderSchedule() {
+            const tbody = document.getElementById('schedule-tbody');
+            tbody.innerHTML = '';
+
+            let completedCount = 0;
+
+            schedule.forEach((round) => {
+                if (round.complete) completedCount++;
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-slate-800/60 transition ${round.complete ? 'bg-slate-900/60' : 'bg-transparent'}`;
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 text-center text-slate-400 font-bold border-b border-slate-800/40">${round.id}</td>
+                    <td class="py-2.5 px-3 text-slate-200 font-semibold border-b border-slate-800/40">${round.track}</td>
+                    <td class="py-2.5 px-3 text-center text-slate-400 border-b border-slate-800/40">${round.laps}</td>
+                    <td class="py-2.5 px-3 text-center border-b border-slate-800/40">
+                        <input type="checkbox" ${round.complete ? 'checked' : ''} 
+                            onchange="toggleRaceComplete(${round.id}, this.checked)"
+                            class="w-4 h-4 rounded bg-slate-950 border-slate-700 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 cursor-pointer">
+                    </td>
+                    <td class="py-2.5 px-3 text-right border-b border-slate-800/40">
+                        <input type="text" value="${round.time || ''}" placeholder="--.--.--"
+                            onchange="updateRaceTime(${round.id}, this.value)"
+                            class="table-input w-24 px-2 py-0.5 text-right text-xs rounded bg-slate-950/80 border border-slate-700/80 ${round.complete ? 'text-red-500 font-semibold' : 'text-slate-400'} font-mono tracking-wide">
+                    </td>
+                    <td class="py-2.5 px-3 text-center border-b border-slate-800/40">
+                        <button onclick="openResultsModal(${round.id})" class="p-1 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded transition" title="Edit Race Finishers">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('completion-badge').innerText = `${completedCount} / 24 Completed`;
+        }
+
+        function toggleRaceComplete(roundId, isChecked) {
+            const round = schedule.find(r => r.id === roundId);
+            if (!round) return;
+
+            round.complete = isChecked;
+
+            if (isChecked && (!round.results || Object.keys(round.results).length === 0)) {
+                const defaultResults = {};
+                DRIVERS.slice(0, 10).forEach((d, i) => defaultResults[d.id] = i + 1);
+                round.results = defaultResults;
+            }
+
+            saveData();
+            renderSchedule();
+            updateStandings();
+        }
+
+        function updateRaceTime(roundId, timeValue) {
+            const round = schedule.find(r => r.id === roundId);
+            if (round) {
+                round.time = timeValue;
+                saveData();
+            }
+        }
+
+        function updateStandings() {
+            // Determine if using initial screenshot baseline or dynamic round count
+            const completedRounds = schedule.filter(r => r.complete).length;
+
+            const driverScores = DRIVERS.map(driver => {
+                let pts = 0;
+
+                // Check if all first 6 rounds match baseline screenshot state
+                const first6Default = schedule.slice(0, 6).every(r => r.complete);
+                if (first6Default && completedRounds === 6) {
+                    pts = driver.initPts;
+                } else {
+                    schedule.forEach(round => {
+                        if (round.complete && round.results) {
+                            const pos = round.results[driver.id];
+                            if (pos && POINTS_MAP[pos]) {
+                                pts += POINTS_MAP[pos];
+                            }
+                        }
+                    });
+                }
+
+                return { ...driver, totalPoints: pts };
+            });
+
+            // Sort by total points descending
+            driverScores.sort((a, b) => b.totalPoints - a.totalPoints);
+
+            const tbody = document.getElementById('standings-tbody');
+            tbody.innerHTML = '';
+
+            driverScores.forEach((driver, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition";
+
+                tr.innerHTML = `
+                    <td class="py-2 pl-2 text-center font-bold ${idx === 0 ? 'text-amber-400' : idx < 3 ? 'text-slate-200' : 'text-slate-500'}">${idx + 1}</td>
+                    <td class="py-2 text-center">
+                        ${SVG_BADGES[driver.team] || `<span class="text-xs font-bold">${driver.team}</span>`}
+                    </td>
+                    <td class="py-2 pl-2 font-semibold text-slate-200">${driver.name}</td>
+                    <td class="py-2 text-right pr-3 font-bold text-slate-100 font-mono text-sm">${driver.totalPoints}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('rounds-completed-text').innerText = `After: ${completedRounds} Rounds`;
+        }
+
+        function openResultsModal(roundId) {
+            activeRoundId = roundId;
+            const round = schedule.find(r => r.id === roundId);
+            if (!round) return;
+
+            document.getElementById('modal-round-title').innerText = `Round ${round.id}: ${round.track}`;
+            
+            const container = document.getElementById('modal-drivers-list');
+            container.innerHTML = '';
+
+            const currentResults = round.results || {};
+
+            DRIVERS.forEach(driver => {
+                const pos = currentResults[driver.id] || '';
+                
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-2 rounded bg-slate-800/80 border border-slate-700/60";
+                div.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        ${SVG_BADGES[driver.team]}
+                        <span class="text-xs font-semibold text-slate-200">${driver.name}</span>
+                    </div>
+                    <select id="driver-pos-${driver.id}" class="bg-slate-900 border border-slate-700 rounded text-xs text-white px-2 py-1 focus:outline-none focus:border-blue-500">
+                        <option value="">-- No Pts --</option>
+                        ${[1,2,3,4,5,6,7,8,9,10].map(p => `<option value="${p}" ${pos == p ? 'selected' : ''}>${p}${getOrdinal(p)} Place (${POINTS_MAP[p]} pts)</option>`).join('')}
+                    </select>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('results-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('results-modal').classList.add('hidden');
+            activeRoundId = null;
+        }
+
+        function autoAssignDefaultTop10() {
+            DRIVERS.slice(0, 10).forEach((driver, idx) => {
+                const select = document.getElementById(`driver-pos-${driver.id}`);
+                if (select) select.value = idx + 1;
+            });
+        }
+
+        function clearPositions() {
+            DRIVERS.forEach(driver => {
+                const select = document.getElementById(`driver-pos-${driver.id}`);
+                if (select) select.value = '';
+            });
+        }
+
+        function saveModalResults() {
+            if (!activeRoundId) return;
+
+            const round = schedule.find(r => r.id === activeRoundId);
+            if (!round) return;
+
+            const newResults = {};
+
+            DRIVERS.forEach(driver => {
+                const select = document.getElementById(`driver-pos-${driver.id}`);
+                if (select && select.value) {
+                    newResults[driver.id] = parseInt(select.value, 10);
+                }
+            });
+
+            round.results = newResults;
+            round.complete = true;
+
+            saveData();
+            renderSchedule();
+            updateStandings();
+            closeModal();
+        }
+
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return s[(v - 20) % 10] || s[v] || s[0];
+        }
+
+        function resetData() {
+            if (confirm("Reset all 24 race results and standings back to screenshot default state?")) {
+                localStorage.removeItem('btcc_schedule_v3');
+                schedule = JSON.parse(JSON.stringify(INITIAL_SCHEDULE));
+                saveData();
+                renderSchedule();
+                updateStandings();
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(schedule, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "btcc_1997_championship.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+    </script>
+</body>
+</html>

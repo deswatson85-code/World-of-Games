@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFS Most Wanted - Blacklist Chalkboard</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Fonts: Permanent Marker, Rock Salt, Caveat, Rubik Glitch -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Permanent+Marker&family=Rock+Salt&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            marker: ['"Permanent Marker"', 'cursive'],
+            rock: ['"Rock Salt"', 'cursive'],
+            caveat: ['"Caveat"', 'cursive'],
+            teko: ['"Teko"', 'sans-serif'],
+          },
+          colors: {
+            nfsYellow: '#f5c518',
+            nfsRed: '#e63946',
+            chalkWhite: '#eaeaea',
+            slateBoard: '#141817',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111514;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333d39;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f5c518;
+    }
+
+    /* Gritty Chalkboard Texture Background */
+    body {
+      background-color: #0b0d0c;
+      background-image: 
+        radial-gradient(circle at 50% 30%, rgba(245, 197, 24, 0.04) 0%, transparent 70%),
+        radial-gradient(circle at 20% 80%, rgba(230, 57, 70, 0.03) 0%, transparent 50%),
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0px, rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 3px);
+      color: #eaeaea;
+      min-height: 100vh;
+      font-family: 'Caveat', cursive;
+      overflow-x: hidden;
+    }
+
+    /* Board Frame Effect */
+    .chalkboard-frame {
+      background: linear-gradient(135deg, #2b1f1d 0%, #171110 50%, #2b1f1d 100%);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.9),
+        inset 0 0 15px rgba(0, 0, 0, 0.8),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+      border: 12px solid #231917;
+      position: relative;
+    }
+
+    .chalkboard-surface {
+      background: #151a18;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06) 0%, transparent 80%),
+        radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 2px, transparent 2px, transparent 5px);
+      box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Chalk Glow & Text Effects */
+    .chalk-text-white {
+      color: #f0f3f1;
+      text-shadow: 0 0 2px rgba(255, 255, 255, 0.7), 1px 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .chalk-text-yellow {
+      color: #f5c518;
+      text-shadow: 0 0 3px rgba(245, 197, 24, 0.6), 1px 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .chalk-text-red {
+      color: #ff4d4d;
+      text-shadow: 0 0 3px rgba(255, 77, 77, 0.6), 1px 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Defeated Cross-out Strikethrough Animation */
+    .row-defeated {
+      position: relative;
+      opacity: 0.75;
+    }
+
+    .row-defeated::after {
+      content: '';
+      position: absolute;
+      left: 2%;
+      right: 2%;
+      top: 50%;
+      height: 6px;
+      background: #e63946;
+      box-shadow: 0 0 8px #e63946, 0 0 2px #ffffff;
+      transform: translateY(-50%) rotate(-0.8deg);
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0.85;
+      animation: strikeIn 0.25s ease-out forwards;
+    }
+
+    @keyframes strikeIn {
+      from { width: 0%; opacity: 0; }
+      to { width: 96%; opacity: 0.85; }
+    }
+
+    /* Chalk Badge spray circle */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 46px;
+      border: 3px dashed rgba(245, 197, 24, 0.8);
+      border-radius: 50%;
+      transform: rotate(-4deg);
+      box-shadow: inset 0 0 6px rgba(245, 197, 24, 0.3);
+    }
+
+    /* Editable Input Styling */
+    .chalk-input {
+      background: transparent;
+      border: 1px solid transparent;
+      color: inherit;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    .chalk-input:hover {
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
+    }
+    .chalk-input:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 2px solid #f5c518;
+      border-radius: 2px;
+    }
+
+    /* Chalk Tray & Stick Models */
+    .chalk-tray {
+      background: linear-gradient(180deg, #1c1412 0%, #2e201c 100%);
+      border-top: 3px solid #110c0a;
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.7);
+    }
+
+    .chalk-stick {
+      width: 48px;
+      height: 10px;
+      border-radius: 2px;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.4);
+    }
+
+    .eraser-felt {
+      background: #4a382c;
+      border-top: 5px solid #8c7362;
+      box-shadow: 2px 3px 6px rgba(0,0,0,0.7);
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      background: rgba(10, 12, 11, 0.85);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4 lg:p-6 select-none">
+
+  <!-- Main Container -->
+  <div class="max-w-7xl mx-auto chalkboard-frame rounded-xl overflow-hidden relative">
+    
+    <!-- Chalkboard Inner Surface -->
+    <div class="chalkboard-surface p-4 sm:p-6 lg:p-8 relative">
+      
+      <!-- Vignette and Dust Overlays -->
+      <div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/50 via-transparent to-black/30"></div>
+      
+      <!-- Top Header / Title Section -->
+      <div class="relative z-10 mb-6 border-b-2 border-dashed border-white/20 pb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          
+          <!-- Title & Subtitle -->
+          <div class="space-y-1">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-flag-checkered text-nfsYellow text-3xl sm:text-4xl transform -rotate-12"></i>
+              <h1 class="font-marker text-4xl sm:text-5xl lg:text-6xl text-nfsYellow tracking-wider chalk-text-yellow uppercase transform -rotate-1">
+                THE BLACKLIST
+              </h1>
+            </div>
+            <p class="font-rock text-xs sm:text-sm text-gray-300 tracking-widest pl-12 opacity-80 uppercase">
+              ROCKPORT POLICE DEPT // MOST WANTED RIVALRY LOG
+            </p>
+          </div>
+
+          <!-- Quick Stats Counter -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 font-teko text-lg tracking-wider">
+            <div class="bg-black/40 border border-white/10 rounded p-2 text-center">
+              <span class="block text-xs font-rock text-gray-400">TOTAL RIVALS</span>
+              <span id="statTotal" class="text-2xl text-white font-marker">15</span>
+            </div>
+            <div class="bg-black/40 border border-white/10 rounded p-2 text-center">
+              <span class="block text-xs font-rock text-nfsRed">DEFEATED</span>
+              <span id="statDefeated" class="text-2xl text-nfsRed font-marker">0 / 15</span>
+            </div>
+            <div class="bg-black/40 border border-white/10 rounded p-2 text-center">
+              <span class="block text-xs font-rock text-nfsYellow">TARGET #</span>
+              <span id="statTarget" class="text-2xl text-nfsYellow font-marker">#15 SONNY</span>
+            </div>
+            <div class="bg-black/40 border border-white/10 rounded p-2 text-center">
+              <span class="block text-xs font-rock text-emerald-400">TOTAL BOUNTY</span>
+              <span id="statBounty" class="text-2xl text-emerald-400 font-marker">$0</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Filter Bar & Actions -->
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-4 bg-black/30 p-3 rounded-lg border border-white/10">
+          
+          <!-- Filter Buttons -->
+          <div class="flex flex-wrap items-center gap-2 font-marker text-sm sm:text-base">
+            <button onclick="setFilter('all')" id="filterAll" class="px-3 py-1 rounded border border-nfsYellow bg-nfsYellow/20 text-nfsYellow transition hover:bg-nfsYellow hover:text-black">
+              ALL RIVALS
+            </button>
+            <button onclick="setFilter('active')" id="filterActive" class="px-3 py-1 rounded border border-white/30 text-gray-300 hover:border-nfsYellow hover:text-nfsYellow transition">
+              ACTIVE TARGETS
+            </button>
+            <button onclick="setFilter('defeated')" id="filterDefeated" class="px-3 py-1 rounded border border-white/30 text-gray-300 hover:border-nfsRed hover:text-nfsRed transition">
+              DEFEATED (#)
+            </button>
+          </div>
+
+          <!-- Search & Controls -->
+          <div class="flex items-center gap-3 w-full lg:w-auto">
+            <div class="relative flex-1 lg:w-64">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+              <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search rival or car..." class="w-full bg-black/50 border border-white/20 rounded pl-8 pr-3 py-1 text-sm font-rock text-white placeholder-gray-500 focus:outline-none focus:border-nfsYellow">
+            </div>
+
+            <button onclick="openAddModal()" class="px-3 py-1 bg-emerald-600/30 hover:bg-emerald-600 border border-emerald-500 text-emerald-300 hover:text-white rounded font-marker text-sm transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-plus text-xs"></i> ADD RIVAL
+            </button>
+
+            <button onclick="resetDefaults()" class="px-3 py-1 bg-red-900/30 hover:bg-red-700 border border-red-500 text-red-300 hover:text-white rounded font-marker text-sm transition flex items-center gap-1.5 whitespace-nowrap" title="Reset to Original NFS MW 2005 Blacklist">
+              <i class="fa-solid fa-rotate-left text-xs"></i> RESET
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Main Blacklist Table -->
+      <div class="relative z-10 overflow-x-auto rounded-lg border border-white/10 bg-black/20">
+        <table class="w-full text-left border-collapse min-w-[768px]">
+          <thead>
+            <tr class="font-marker text-nfsYellow text-lg sm:text-xl border-b-2 border-white/20 bg-white/5">
+              <th class="py-3 px-4 text-center w-16">RANK</th>
+              <th class="py-3 px-4">RIVAL / DRIVER</th>
+              <th class="py-3 px-4">RIDE / VEHICLE</th>
+              <th class="py-3 px-4">BOUNTY ($)</th>
+              <th class="py-3 px-4 text-center">STATUS</th>
+              <th class="py-3 px-4">NOTES / INTEL</th>
+              <th class="py-3 px-4 text-center w-20">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="blacklistBody" class="font-caveat text-xl sm:text-2xl divide-y divide-white/10">
+            <!-- Dynamic Rows Injected Here -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Bottom Chalk Tray -->
+    <div class="chalk-tray p-3 flex items-center justify-between relative z-20">
+      <div class="flex items-center gap-4">
+        <div class="eraser-felt w-20 h-6 rounded flex items-center justify-center text-[10px] font-rock text-gray-300 opacity-80" title="Chalk Eraser">
+          ERASER
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="chalk-stick bg-white" title="White Chalk"></div>
+          <div class="chalk-stick bg-nfsYellow" title="Yellow Chalk"></div>
+          <div class="chalk-stick bg-nfsRed" title="Red Chalk"></div>
+        </div>
+      </div>
+      <div class="font-rock text-xs text-gray-400 tracking-widest hidden sm:block">
+        ROCKPORT CITY PD // MOST WANTED RIVALRY BOARD 2005
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Add/Edit Rival Modal -->
+  <div id="rivalModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border-2 border-nfsYellow rounded-xl p-6 max-w-md w-full shadow-2xl relative">
+      <h3 id="modalTitle" class="font-marker text-2xl text-nfsYellow mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-user-plus"></i> ADD NEW RIVAL
+      </h3>
+      
+      <form id="rivalForm" onsubmit="handleFormSubmit(event)" class="space-y-4 font-rock text-sm">
+        <input type="hidden" id="editIndex" value="-1">
+        
+        <div>
+          <label class="block text-gray-400 text-xs mb-1">BLACK LIST RANK (#1 - #15+)</label>
+          <input type="number" id="formRank" min="1" max="99" required class="w-full bg-black/60 border border-white/20 rounded p-2 text-white font-marker focus:border-nfsYellow focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-gray-400 text-xs mb-1">DRIVER NAME / ALIAS</label>
+          <input type="text" id="formName" required placeholder="e.g. Razor" class="w-full bg-black/60 border border-white/20 rounded p-2 text-white font-marker focus:border-nfsYellow focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-gray-400 text-xs mb-1">VEHICLE / RIDE</label>
+          <input type="text" id="formCar" required placeholder="e.g. BMW M3 GTR" class="w-full bg-black/60 border border-white/20 rounded p-2 text-white font-marker focus:border-nfsYellow focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-gray-400 text-xs mb-1">BOUNTY VALUE ($)</label>
+          <input type="number" id="formBounty" min="0" step="1000" required placeholder="10000000" class="w-full bg-black/60 border border-white/20 rounded p-2 text-white font-marker focus:border-nfsYellow focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-gray-400 text-xs mb-1">STATUS</label>
+          <select id="formStatus" class="w-full bg-black/60 border border-white/20 rounded p-2 text-white font-marker focus:border-nfsYellow focus:outline-none">
+            <option value="ACTIVE RIVAL">ACTIVE RIVAL</option>
+            <option value="DEFEATED">DEFEATED / BUSTED</option>
+            <option value="LOCKED">LOCKED</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-gray-400 text-xs mb-1">RIVAL INTEL / NOTES</label>
+          <textarea id="formNotes" rows="2" placeholder="Bio or weakness notes..." class="w-full bg-black/60 border border-white/20 rounded p-2 text-white font-caveat text-xl focus:border-nfsYellow focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-white/10 font-marker">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">CANCEL</button>
+          <button type="submit" class="px-4 py-2 rounded bg-nfsYellow text-black hover:bg-yellow-400">SAVE RIVAL</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript App Logic -->
+  <script>
+    // Authentic NFS Most Wanted 2005 Default Blacklist Data (#15 to #1)
+    const defaultBlacklist = [
+      { rank: 15, name: "Sonny", car: "Volkswagen Golf GTI", bounty: 20000, status: "ACTIVE RIVAL", notes: "Loves vinyls. Uses quick acceleration." },
+      { rank: 14, name: "Taz", car: "Lexus IS 300", bounty: 50000, status: "LOCKED", notes: "Aggressive crasher, aggressive pursuits." },
+      { rank: 13, name: "Vic", car: "Toyota Supra", bounty: 100000, status: "LOCKED", notes: "High top speed. Watch out on straightaways." },
+      { rank: 12, name: "Izzy", car: "Mazda RX-8", bounty: 180000, status: "LOCKED", notes: "Master of drift & sharp hairpin turns." },
+      { rank: 11, name: "Big Lou", car: "Mitsubishi Eclipse GT", bounty: 300000, status: "LOCKED", notes: "Thinks he owns the strip." },
+      { rank: 10, name: "Baron", car: "Porsche Cayman S", bounty: 500000, status: "LOCKED", notes: "Rich kid with high precision tuning." },
+      { rank: 9,  name: "Earl", car: "Mitsubishi Lancer EVOLUTION VIII", bounty: 750000, status: "LOCKED", notes: "Rubberband king. Extreme acceleration." },
+      { rank: 8,  name: "Jewels", car: "Ford Mustang GT", bounty: 1150000, status: "LOCKED", notes: "Raw American muscle powerhouse." },
+      { rank: 7,  name: "Kaze", car: "Mercedes-Benz CLK 500", bounty: 1680000, status: "LOCKED", notes: "Wild card. High risk crashes." },
+      { rank: 6,  name: "Ming", car: "Lamborghini Gallardo", bounty: 2400000, status: "LOCKED", notes: "Extremely fast police getaway record." },
+      { rank: 5,  name: "Webster", car: "Chevrolet Corvette C6", bounty: 3050000, status: "LOCKED", notes: "Ex-pro track racer." },
+      { rank: 4,  name: "JV", car: "Dodge Viper SRT-10", bounty: 4050000, status: "LOCKED", notes: "Spends daytime at club, nighttime on highway." },
+      { rank: 3,  name: "Ronnie", car: "Aston Martin DB9", bounty: 5550000, status: "LOCKED", notes: "Spoiled rich boy with a supercar." },
+      { rank: 2,  name: "Bull", car: "Mercedes-Benz SLR McLaren", bounty: 7550000, status: "LOCKED", notes: "Razor's right hand enforcer." },
+      { rank: 1,  name: "Razor", car: "BMW M3 GTR", bounty: 10000000, status: "LOCKED", notes: "Stole your M3 GTR. #1 Target!" }
+    ];
+
+    let blacklist = [];
+    let currentFilter = 'all';
+
+    // Synthesize subtle chalk audio feedback using Web Audio API
+    function playChalkSound(type = 'strike') {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        if (type === 'strike') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        } else {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        }
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch (e) {
+        // Audio fallback
+      }
+    }
+
+    // Initialize application
+    function init() {
+      const saved = localStorage.getItem('nfs_blacklist_data');
+      if (saved) {
+        try {
+          blacklist = JSON.parse(saved);
+        } catch (e) {
+          blacklist = [...defaultBlacklist];
+        }
+      } else {
+        blacklist = [...defaultBlacklist];
+      }
+      sortBlacklist();
+      renderTable();
+    }
+
+    function saveState() {
+      localStorage.setItem('nfs_blacklist_data', JSON.stringify(blacklist));
+    }
+
+    function sortBlacklist() {
+      // Sort ascending by rank (#1 at top or #15 depending on view, standard is #15 to #1 or #1 to #15)
+      blacklist.sort((a, b) => b.rank - a.rank);
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      
+      // Update Button Styles
+      document.getElementById('filterAll').className = filter === 'all' 
+        ? "px-3 py-1 rounded border border-nfsYellow bg-nfsYellow/20 text-nfsYellow transition" 
+        : "px-3 py-1 rounded border border-white/30 text-gray-300 hover:border-nfsYellow hover:text-nfsYellow transition";
+      
+      document.getElementById('filterActive').className = filter === 'active' 
+        ? "px-3 py-1 rounded border border-nfsYellow bg-nfsYellow/20 text-nfsYellow transition" 
+        : "px-3 py-1 rounded border border-white/30 text-gray-300 hover:border-nfsYellow hover:text-nfsYellow transition";
+      
+      document.getElementById('filterDefeated').className = filter === 'defeated' 
+        ? "px-3 py-1 rounded border border-nfsRed bg-nfsRed/20 text-nfsRed transition" 
+        : "px-3 py-1 rounded border border-white/30 text-gray-300 hover:border-nfsRed hover:text-nfsRed transition";
+
+      renderTable();
+    }
+
+    function updateStats() {
+      const total = blacklist.length;
+      const defeatedList = blacklist.filter(r => r.status === 'DEFEATED');
+      const defeatedCount = defeatedList.length;
+      
+      // Find current active target (lowest rank that is not defeated)
+      const activeRivals = blacklist
+        .filter(r => r.status !== 'DEFEATED')
+        .sort((a,b) => b.rank - a.rank);
+      
+      const currentTarget = activeRivals.length > 0 ? `#${activeRivals[activeRivals.length - 1].rank} ${activeRivals[activeRivals.length - 1].name.toUpperCase()}` : "ALL DEFEATED!";
+
+      const totalBounty = defeatedList.reduce((sum, r) => sum + Number(r.bounty || 0), 0);
+
+      document.getElementById('statTotal').innerText = total;
+      document.getElementById('statDefeated').innerText = `${defeatedCount} / ${total}`;
+      document.getElementById('statTarget').innerText = currentTarget;
+      document.getElementById('statBounty').innerText = `$${totalBounty.toLocaleString()}`;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('blacklistBody');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      tbody.innerHTML = '';
+
+      updateStats();
+
+      blacklist.forEach((rival, index) => {
+        // Filtering
+        if (currentFilter === 'active' && rival.status === 'DEFEATED') return;
+        if (currentFilter === 'defeated' && rival.status !== 'DEFEATED') return;
+        if (search && !rival.name.toLowerCase().includes(search) && !rival.car.toLowerCase().includes(search)) return;
+
+        const isDefeated = rival.status === 'DEFEATED';
+        const tr = document.createElement('tr');
+        tr.className = `transition hover:bg-white/5 ${isDefeated ? 'row-defeated' : ''}`;
+
+        tr.innerHTML = `
+          <!-- RANK -->
+          <td class="py-3 px-4 text-center">
+            <span class="rank-badge font-marker text-nfsYellow">#${rival.rank}</span>
+          </td>
+
+          <!-- DRIVER NAME -->
+          <td class="py-3 px-4">
+            <input type="text" value="${escapeHtml(rival.name)}" onchange="updateCell(${index}, 'name', this.value)" class="chalk-input font-marker text-2xl ${isDefeated ? 'chalk-text-red line-through' : 'chalk-text-white'}" />
+          </td>
+
+          <!-- VEHICLE -->
+          <td class="py-3 px-4">
+            <input type="text" value="${escapeHtml(rival.car)}" onchange="updateCell(${index}, 'car', this.value)" class="chalk-input font-rock text-lg ${isDefeated ? 'text-gray-500' : 'text-nfsYellow'}" />
+          </td>
+
+          <!-- BOUNTY -->
+          <td class="py-3 px-4 font-marker">
+            <div class="flex items-center gap-1">
+              <span class="text-xs text-gray-400">$</span>
+              <input type="number" value="${rival.bounty}" onchange="updateCell(${index}, 'bounty', this.value)" class="chalk-input text-emerald-400 text-2xl" />
+            </div>
+          </td>
+
+          <!-- STATUS BUTTON TOGGLE -->
+          <td class="py-3 px-4 text-center">
+            <button onclick="toggleStatus(${index})" class="px-3 py-1 rounded-full font-marker text-sm transition transform hover:scale-105 ${getStatusBadgeClass(rival.status)}">
+              ${rival.status}
+            </button>
+          </td>
+
+          <!-- NOTES -->
+          <td class="py-3 px-4">
+            <input type="text" value="${escapeHtml(rival.notes)}" onchange="updateCell(${index}, 'notes', this.value)" class="chalk-input text-gray-300 text-xl font-caveat" />
+          </td>
+
+          <!-- ACTIONS -->
+          <td class="py-3 px-4 text-center">
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="openEditModal(${index})" class="text-gray-400 hover:text-nfsYellow transition p-1" title="Edit Rival Details">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="deleteRival(${index})" class="text-gray-400 hover:text-nfsRed transition p-1" title="Delete Rival">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getStatusBadgeClass(status) {
+      switch (status) {
+        case 'DEFEATED':
+          return 'bg-red-900/60 border border-red-500 text-red-200 shadow-lg';
+        case 'ACTIVE RIVAL':
+          return 'bg-nfsYellow/20 border border-nfsYellow text-nfsYellow animate-pulse';
+        default:
+          return 'bg-gray-800/60 border border-gray-600 text-gray-400';
+      }
+    }
+
+    function toggleStatus(index) {
+      playChalkSound('strike');
+      const current = blacklist[index].status;
+      if (current === 'DEFEATED') {
+        blacklist[index].status = 'ACTIVE RIVAL';
+      } else if (current === 'ACTIVE RIVAL') {
+        blacklist[index].status = 'DEFEATED';
+      } else {
+        blacklist[index].status = 'ACTIVE RIVAL';
+      }
+      saveState();
+      renderTable();
+    }
+
+    function updateCell(index, key, value) {
+      playChalkSound('write');
+      if (key === 'bounty' || key === 'rank') {
+        blacklist[index][key] = Number(value);
+      } else {
+        blacklist[index][key] = value;
+      }
+      saveState();
+      updateStats();
+    }
+
+    function deleteRival(index) {
+      if (confirm(`Remove #${blacklist[index].rank} ${blacklist[index].name} from the Blacklist?`)) {
+        playChalkSound('strike');
+        blacklist.splice(index, 1);
+        saveState();
+        renderTable();
+      }
+    }
+
+    function resetDefaults() {
+      if (confirm('Reset Blacklist back to original 2005 Need For Speed Most Wanted defaults?')) {
+        playChalkSound('strike');
+        blacklist = JSON.parse(JSON.stringify(defaultBlacklist));
+        saveState();
+        renderTable();
+      }
+    }
+
+    // Modal Functions
+    function openAddModal() {
+      document.getElementById('modalTitle').innerText = 'ADD NEW RIVAL';
+      document.getElementById('editIndex').value = '-1';
+      document.getElementById('formRank').value = blacklist.length + 1;
+      document.getElementById('formName').value = '';
+      document.getElementById('formCar').value = '';
+      document.getElementById('formBounty').value = '500000';
+      document.getElementById('formStatus').value = 'ACTIVE RIVAL';
+      document.getElementById('formNotes').value = '';
+      document.getElementById('rivalModal').classList.remove('hidden');
+    }
+
+    function openEditModal(index) {
+      const rival = blacklist[index];
+      document.getElementById('modalTitle').innerText = `EDIT RIVAL #${rival.rank}`;
+      document.getElementById('editIndex').value = index;
+      document.getElementById('formRank').value = rival.rank;
+      document.getElementById('formName').value = rival.name;
+      document.getElementById('formCar').value = rival.car;
+      document.getElementById('formBounty').value = rival.bounty;
+      document.getElementById('formStatus').value = rival.status;
+      document.getElementById('formNotes').value = rival.notes;
+      document.getElementById('rivalModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('rivalModal').classList.add('hidden');
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      playChalkSound('write');
+
+      const editIdx = parseInt(document.getElementById('editIndex').value);
+      const rivalData = {
+        rank: parseInt(document.getElementById('formRank').value),
+        name: document.getElementById('formName').value,
+        car: document.getElementById('formCar').value,
+        bounty: parseInt(document.getElementById('formBounty').value),
+        status: document.getElementById('formStatus').value,
+        notes: document.getElementById('formNotes').value
+      };
+
+      if (editIdx === -1) {
+        blacklist.push(rivalData);
+      } else {
+        blacklist[editIdx] = rivalData;
+      }
+
+      sortBlacklist();
+      saveState();
+      renderTable();
+      closeModal();
+    }
+
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : '';
+    }
+
+    // Run on load
+    window.onload = init;
+  </script>
+</body>
+</html>

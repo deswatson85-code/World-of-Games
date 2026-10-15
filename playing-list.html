@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Currently Playing - World of Games</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="sidebar">
+        <h2 class="sidebar-logo">WOG <span style="color: var(--accent-color);">DB</span></h2>
+            <ul>
+                <li><a href="index.html" class="sidebar-link"><i class="fas fa-home"></i> HOME</a></li>
+                <li><a href="playing-list.html" class="sidebar-link active"><i class="fas fa-gamepad"></i> PLAYING <span id="playingCount" class="count-badge">0</span></a></li>
+                <li><a href="backlog.html" class="sidebar-link"><i class="fas fa-clock"></i> BACKLOG <span id="backlogCount" class="count-badge">0</span></a></li>
+                <li><a href="completed.html" class="sidebar-link"><i class="fas fa-check-circle"></i> DONE <span id="completedCount" class="count-badge">0</span></a></li>
+                <li><a href="stats.html" class="sidebar-link"><i class="fas fa-chart-bar"></i> STATS</a></li>
+            </ul>
+        </div> 
+
+       <div class="main-content">
+            <header class="table-header">
+                <h1><i class="fas fa-gamepad"></i> CURRENTLY PLAYING</h1>
+            </header>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>GAME NAME</th>
+                            <th>YEAR</th>
+                            <th>PUB</th>
+                            <th>GENRE</th>
+                            <th>PLAT</th>
+                            <th>ACHIEVEMENTS</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playingListBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    
+
+        // Run when page loads
+       window.addEventListener('DOMContentLoaded', () => {
+    // 1. Try to get data from localStorage if the global 'games' isn't ready
+    if (typeof games === 'undefined' || !games || games.length === 0) {
+        const rawData = localStorage.getItem('worldOfGamesData');
+        if (rawData) {
+            window.games = JSON.parse(rawData);
+        }
+    }
+
+    // 2. Only render if we successfully found data
+    if (window.games && window.games.length > 0) {
+        renderPlayingList();
+        updateSidebarStats(); 
+    }
+});
+    <script src="script.js"></script>
+    <script>
+        function renderPlayingList() {
+            const tbody = document.getElementById('playingListBody');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            // 1. Force fetch data directly from localStorage if 'games' is empty
+            if (typeof games === 'undefined' || !games || games.length === 0) {
+                const rawData = localStorage.getItem('worldOfGamesData');
+                if (rawData) {
+                    window.games = JSON.parse(rawData);
+                } else {
+                    window.games = [];
+                }
+            }
+
+            const gameData = window.games || games || [];
+
+            // 2. Case-insensitive and trimmed filter check
+            const playingGames = gameData.filter(g => g && g[11] && g[11].toString().trim().toLowerCase() === "playing");
+
+            if (playingGames.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 40px; color: #8b949e;">You aren't playing anything right now!</td></tr>`;
+                return;
+            }
+
+            playingGames.forEach((game, index) => {
+                const actualIndex = gameData.indexOf(game);
+                const row = document.createElement('tr');
+                
+                const totalAch = parseInt(game[9]) || 0;
+                const earnedAch = parseInt(game[10]) || 0;
+                const percentage = totalAch > 0 ? Math.round((earnedAch / totalAch) * 100) : 0;
+
+                row.innerHTML = `
+                    <td style="color: var(--year-color);">${index + 1}</td>
+                    <td style="font-weight:bold; color: #ffffff;">${game[1] || ''}</td>
+                    <td>${game[2] || '-'}</td>
+                    <td class="clickable-cell" onclick="location.href='index8.html?filter=${encodeURIComponent(game[3] || '')}';">${game[3] || '-'}</td>
+                    <td class="clickable-cell" onclick="location.href='index8.html?filter=${encodeURIComponent(game[4] || '')}';">${game[4] || '-'}</td>
+                    <td class="clickable-cell" onclick="location.href='index8.html?filter=${encodeURIComponent(game[7] || '')}';">${game[7] || '-'}</td>
+                    <td>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${percentage}%"></div>
+                            <span class="progress-text">${earnedAch}/${totalAch}</span>
+                        </div>
+                    </td>
+                    <td class="action-links">
+                        <button class="action-btn edit-btn" onclick="window.location.href='index8.html?edit=${actualIndex}'">EDIT</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Run as soon as DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPlayingList();
+            if (typeof updateSidebarStats === 'function') {
+                updateSidebarStats(); 
+            }
+        });
+    </script>
+</body>
+</html>

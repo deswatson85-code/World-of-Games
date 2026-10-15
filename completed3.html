@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World of Games - Hall of Fame</title>
+    <link rel="icon" type="image/png" href="Images/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="header-container">
+       <!-- <a href="Index.html" class="back-link">← Back to Main Database</a> -->
+        <a href="Index.html" class="back-btn" style="float: left;">← Back</a>
+        <h1>Hall of Fame</h1>
+        <p>Your Journey of Completed Conquests</p>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-box">
+            <span class="stat-label">Completed</span>
+            <span id="totalCompleted" class="stat-number">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Total Score</span>
+            <span id="totalAch" class="stat-number">0</span>
+        </div>
+    </div>
+
+    <table id="gameTable">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Game Name</th>
+            <th>Year</th>
+            <th>Pub</th>
+            <th>Genre</th>
+            <th>Series</th>
+            <th>Launch</th>
+            <th>Plat</th>
+            <th>Done</th>
+            <th>Earn</th>
+            <th>Stat</th>
+        </tr>
+    </thead>
+    <script src="script.js"></script>
+    <tbody id="completedBody"></tbody>
+</table>
+<div id="paginationCompleted" class="pagination"></div>
+
+</div>
+
+
+</body>
+</html>

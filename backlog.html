@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World of Games - Backlog</title>
+    <link rel="icon" type="image/png" href="Images/favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="sub-page">
+    <div class="container">
+        <div class="header-container">
+            <a href="index.html" class="back-btn" style="float: left;">← Back</a>
+            <h1>Current Backlog</h1>
+            <p>Games waiting to be played</p>
+        </div>
+
+        <div class="table-container">
+            <table id="gameTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Game Name</th>
+                        <th>Year</th>
+                        <th>Pub</th>
+                        <th>Genre</th>
+                        <th>Series</th>
+                        <th>Launch</th>
+                        <th>Plat</th>            
+                        <th>Earn</th>
+                        <th>Stat</th>
+                    </tr>
+                </thead>
+                <tbody id="backlogBody"></tbody>
+            </table>
+        </div>
+
+        <div id="paginationBacklog" class="pagination"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
