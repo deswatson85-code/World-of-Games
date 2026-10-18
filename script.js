@@ -249,13 +249,13 @@ function renderTable() {
         row.innerHTML = `
             <td style="color: var(--year-color); vertical-align: middle;">${start + i + 1}</td>
             <td style="font-weight: bold; color: #ffffff;">${game[1]}</td>
-            <td class="clickable-cell" onclick="location.href='Index.html?filter=${game[2]}';">${game[2]}</td>
-            <td class="clickable-cell" onclick="location.href='Index.html?filter=${game[3]}';">${game[3]}</td>
-            <td class="clickable-cell" onclick="location.href='Index.html?filter=${game[4]}';">${game[4]}</td>
-            <td class="clickable-cell" onclick="location.href='Index.html?filter=${game[5]}';">${game[5]}</td>
-            <td class="clickable-cell" onclick="location.href='Index.html?filter=${game[6]}';">${launchesHtml}</td>
-            <td class="clickable-cell" onclick="location.href='Index.html?filter=${game[7]}';">${platformsHtml}</td>
-            <td class="clickable-cell" style="color: #f85149;" onclick="location.href='Index.html?filter=${game[8]}';">${datesHtml}</td>
+            <td class="clickable-cell" onclick="location.href='WOG.html?filter=${game[2]}';">${game[2]}</td>
+            <td class="clickable-cell" onclick="location.href='WOG.html?filter=${game[3]}';">${game[3]}</td>
+            <td class="clickable-cell" onclick="location.href='WOG.html?filter=${game[4]}';">${game[4]}</td>
+            <td class="clickable-cell" onclick="location.href='WOG.html?filter=${game[5]}';">${game[5]}</td>
+            <td class="clickable-cell" onclick="location.href='WOG.html?filter=${game[6]}';">${launchesHtml}</td>
+            <td class="clickable-cell" onclick="location.href='WOG.html?filter=${game[7]}';">${platformsHtml}</td>
+            <td class="clickable-cell" style="color: #f85149;" onclick="location.href='WOG.html?filter=${game[8]}';">${datesHtml}</td>
             <td>${achievementsHtml}</td>
             <td style="font-weight: bold; color: ${game[11] === 'Completed' ? '#3fb950' : game[11] === 'Playing' ? '#58a6ff' : '#f85149'};">${game[11]}</td>
             <td class="action-buttons-cell">
