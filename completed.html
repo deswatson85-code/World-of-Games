@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World of Games - Hall of Fame</title>
+    <link rel="icon" type="image/png" href="Images/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="sub-page">
+
+<div class="container">
+    <div class="header-container">
+        <a href="WOG.html" class="back-btn" style="float: left;">🏠</a>
+        <h1>Hall of Fame</h1>
+        <p>Your Journey of Completed Conquests</p>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-box">
+            <span class="stat-label">Completed</span>
+            <span id="totalCompleted" class="stat-number">0</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="gameTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Game Name</th>
+                    <th>Year</th>
+                    <th>Pub</th>
+                    <th>Genre</th>
+                    <th>Series</th>
+                    <th>Launch</th>
+                    <th>Plat</th>
+                    <th>Date Done</th>
+                    <th>Progress</th>
+                    <th>Stat</th>
+                </tr>
+            </thead>
+            <tbody id="completedBody"></tbody>
+        </table>
+    </div>
+
+    <div id="paginationCompleted" class="pagination"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

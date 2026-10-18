@@ -42,6 +42,29 @@
   </script>
 
   <style>
+    /* Hub Back Button Styling */
+.hub-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-family: 'Audiowide', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.hub-back-btn:hover {
+    background: #30363d;
+    color: #58a6ff;
+    border-color: #58a6ff;
+    transform: translateX(-2px);
+}
     /* Custom scrollbars and glowing effects */
     ::-webkit-scrollbar {
       width: 8px;
@@ -75,18 +98,23 @@
 </head>
 <body class="bg-steam-dark text-slate-100 font-sans min-h-screen flex flex-col antialiased">
 
+
+
   <!-- TOP HEADER -->
   <header class="bg-steam-base border-b border-steam-light/40 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
       <div class="flex items-center space-x-3">
+        <a href="index.html" class="btn-secondary">🏠 Home</a>
         <div class="p-2.5 bg-steam-light/40 rounded-xl text-steam-accent border border-steam-accent/30 shadow-inner">
           <i class="fa-brands fa-steam text-2xl"></i>
+          
         </div>
         <div>
           <h1 class="font-extrabold text-xl tracking-wide bg-gradient-to-r from-white via-slate-200 to-steam-accent bg-clip-text text-transparent">
             Steam Trophy Room
           </h1>
           <p class="text-xs text-slate-400">Live Achievement Showcase & Analytics</p>
+          
         </div>
       </div>
 

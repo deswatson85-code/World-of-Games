@@ -61,6 +61,29 @@ html, body {
     padding: 20px;
     box-sizing: border-box;   
 }
+/* Hub Back Button Styling */
+.hub-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-family: 'Audiowide', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.hub-back-btn:hover {
+    background: #30363d;
+    color: #58a6ff;
+    border-color: #58a6ff;
+    transform: translateX(-2px);
+}
 .main-content {
     flex: 1;
     display: flex;
@@ -333,21 +356,22 @@ img {
         }
 
         .btn-secondary {
-    display: inline-flex;       /* Helps with vertical centering */
-    align-items: center;
-    justify-content: center;
-    height: 38px;               /* Match this to your search input height */
-    padding: 0 15px;
-    font-family: 'Audiowide', cursive;
-    font-size: 13px;
-    text-decoration: none;      /* Removes underline from links */
-    background-color: var(--border-color);
-    color: #f0f6fc;
-    border: 1px solid #444;
-    border-radius: 6px;
-    cursor: pointer;
-    box-sizing: border-box;     /* Crucial: ensures border doesn't add to height */
-    transition: background 0.2s;
+            display: inline-flex;       /* Helps with vertical centering */
+            align-items: center;
+            justify-content: center;
+            height: 38px;               /* Match this to your search input height */
+            padding: 0 15px;
+            font-family: 'Audiowide', cursive;
+            font-size: 13px;
+            text-decoration: none;      /* Removes underline from links */
+            background-color: var(--border-color);
+            color: #f0f6fc;
+            border: 1px solid #444;
+            border-radius: 6px;
+            cursor: pointer;
+            box-sizing: border-box;     /* Crucial: ensures border doesn't add to height */
+            transition: background 0.2s;
+            line-height: 1;
 }
 
 .btn-secondary:hover {
