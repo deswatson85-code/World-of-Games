@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steam Achievement Tracker</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            steam: {
+              base: '#1b2838',
+              card: '#171a21',
+              dark: '#0e141d',
+              light: '#2a475e',
+              accent: '#66c0f4',
+              hover: '#c7d5e0',
+              gold: '#ffc83d',
+              goldDark: '#b8860b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars and glowing effects */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0e141d;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a475e;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #66c0f4;
+    }
+    
+    .glow-accent {
+      box-shadow: 0 0 15px rgba(102, 192, 244, 0.2);
+    }
+    .glow-gold {
+      box-shadow: 0 0 15px rgba(255, 200, 61, 0.25);
+    }
+    
+    .grayscale-filter {
+      filter: grayscale(100%) opacity(50%);
+      transition: all 0.3s ease;
+    }
+    .grayscale-filter:hover {
+      filter: grayscale(40%) opacity(80%);
+    }
+  </style>
+</head>
+<body class="bg-steam-dark text-slate-100 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- TOP HEADER -->
+  <header class="bg-steam-base border-b border-steam-light/40 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-steam-light/40 rounded-xl text-steam-accent border border-steam-accent/30 shadow-inner">
+          <i class="fa-brands fa-steam text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-xl tracking-wide bg-gradient-to-r from-white via-slate-200 to-steam-accent bg-clip-text text-transparent">
+            Steam Trophy Room
+          </h1>
+          <p class="text-xs text-slate-400">Live Achievement Showcase & Analytics</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center space-x-3">
+        <button id="demoBtn" onclick="loadDemoData()" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-steam-gold/10 text-steam-gold border border-steam-gold/30 hover:bg-steam-gold/20 transition-all flex items-center space-x-1.5 shadow-sm">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Load Demo (ETS2)</span>
+        </button>
+        <button id="settingsToggleBtn" onclick="toggleSettingsPanel()" class="p-2 text-slate-300 hover:text-white bg-steam-card hover:bg-steam-light/50 border border-steam-light/30 rounded-lg transition-all" title="Toggle Credentials Panel">
+          <i class="fa-solid fa-sliders text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- CREDENTIALS & CONTROL PANEL -->
+    <section id="settingsPanel" class="bg-steam-card border border-steam-light/40 rounded-2xl p-5 shadow-xl transition-all duration-300">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-steam-light/30">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-key text-steam-accent text-sm"></i>
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300">Steam API Credentials & Target Game</h2>
+        </div>
+        <span class="text-xs text-slate-400 flex items-center gap-1">
+          <i class="fa-solid fa-lock text-emerald-400"></i> Stored locally in browser
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- API Key Input -->
+        <div class="space-y-1.5">
+          <label for="apiKey" class="block text-xs font-semibold text-slate-300">
+            Steam Web API Key
+            <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer" class="text-steam-accent text-[10px] underline ml-1 hover:text-white">Get Key <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          </label>
+          <div class="relative">
+            <input type="password" id="apiKey" placeholder="Paste 32-character API Key" 
+              class="w-full bg-steam-dark/80 border border-steam-light/60 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-steam-accent focus:ring-1 focus:ring-steam-accent transition-all">
+            <button onclick="toggleKeyVisibility()" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+              <i id="keyEyeIcon" class="fa-solid fa-eye text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Steam ID Input -->
+        <div class="space-y-1.5">
+          <label for="steamId" class="block text-xs font-semibold text-slate-300">
+            Steam 64-bit ID
+            <a href="https://steamid.io/" target="_blank" rel="noreferrer" class="text-steam-accent text-[10px] underline ml-1 hover:text-white">Find ID <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          </label>
+          <input type="text" id="steamId" placeholder="e.g. 76561198000000000" 
+            class="w-full bg-steam-dark/80 border border-steam-light/60 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-steam-accent focus:ring-1 focus:ring-steam-accent transition-all">
+        </div>
+
+        <!-- App ID / Game Selector -->
+        <div class="space-y-1.5">
+          <label for="gamePreset" class="block text-xs font-semibold text-slate-300">Select Game or Custom App ID</label>
+          <div class="flex space-x-2">
+            <select id="gamePreset" onchange="handlePresetChange()" 
+              class="w-full bg-steam-dark/80 border border-steam-light/60 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-steam-accent focus:ring-1 focus:ring-steam-accent transition-all">
+              <option value="227300">Euro Truck Simulator 2 (227300)</option>
+              <option value="270880">American Truck Simulator (270880)</option>
+              <option value="1091500">Cyberpunk 2077 (1091500)</option>
+              <option value="292030">The Witcher 3: Wild Hunt (292030)</option>
+              <option value="1151640">Horizon Zero Dawn (1151640)</option>
+              <option value="custom">Custom App ID...</option>
+            </select>
+            <input type="text" id="customAppId" placeholder="App ID" class="hidden w-28 bg-steam-dark/80 border border-steam-light/60 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-steam-accent">
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-steam-light/20 flex flex-wrap justify-between items-center gap-3">
+        <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer select-none">
+          <input type="checkbox" id="rememberCreds" checked class="rounded bg-steam-dark border-steam-light text-steam-accent focus:ring-0">
+          <span>Remember my credentials in this browser</span>
+        </label>
+
+        <button id="fetchBtn" onclick="fetchAchievementsFromAPI()" class="px-5 py-2.5 bg-gradient-to-r from-steam-accent/80 to-blue-600 hover:from-steam-accent hover:to-blue-500 text-slate-900 font-bold text-xs rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center space-x-2">
+          <i class="fa-solid fa-arrows-rotate" id="fetchIcon"></i>
+          <span>Fetch Achievements</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- NOTIFICATION BANNERS -->
+    <div id="statusMessage" class="hidden rounded-xl p-4 text-xs font-medium border transition-all flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <i id="statusIcon" class="fa-solid text-base"></i>
+        <span id="statusText">Notification message goes here...</span>
+      </div>
+      <button onclick="dismissStatus()" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- STATS DASHBOARD HEADER -->
+    <section id="statsSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Total Achievements Card -->
+      <div class="bg-steam-card border border-steam-light/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+        <div>
+          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Trophies</p>
+          <p id="statTotal" class="text-2xl font-extrabold text-white mt-1">0</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Game Total Achievements</p>
+        </div>
+        <div class="p-3 bg-steam-light/30 rounded-xl text-steam-accent border border-steam-light/40">
+          <i class="fa-solid fa-trophy text-xl"></i>
+        </div>
+      </div>
+
+      <!-- Unlocked Count Card -->
+      <div class="bg-steam-card border border-steam-light/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+        <div>
+          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Unlocked</p>
+          <p id="statUnlocked" class="text-2xl font-extrabold text-emerald-400 mt-1">0</p>
+          <p id="statRemaining" class="text-[10px] text-slate-400 mt-0.5">0 Locked remaining</p>
+        </div>
+        <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+          <i class="fa-solid fa-circle-check text-xl"></i>
+        </div>
+      </div>
+
+      <!-- Completion Percentage Card -->
+      <div class="bg-steam-card border border-steam-light/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+        <div class="flex-1 pr-2">
+          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Completion</p>
+          <p id="statPercent" class="text-2xl font-extrabold text-steam-gold mt-1">0%</p>
+          <!-- Progress Bar -->
+          <div class="w-full bg-steam-dark rounded-full h-2 mt-2 overflow-hidden border border-steam-light/30">
+            <div id="progressBar" class="bg-gradient-to-r from-steam-gold to-amber-500 h-2 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="p-3 bg-steam-gold/10 rounded-xl text-steam-gold border border-steam-gold/20">
+          <i class="fa-solid fa-chart-pie text-xl"></i>
+        </div>
+      </div>
+
+      <!-- Game Profile Info -->
+      <div class="bg-steam-card border border-steam-light/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+        <div>
+          <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Game</p>
+          <p id="statGameTitle" class="text-sm font-extrabold text-white mt-1 truncate max-w-[150px]">Euro Truck Simulator 2</p>
+          <p id="statAppId" class="text-[10px] text-slate-400 mt-0.5">App ID: 227300</p>
+        </div>
+        <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
+          <i class="fa-solid fa-gamepad text-xl"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILTER BAR & SEARCH -->
+    <section class="bg-steam-card border border-steam-light/40 rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
+      
+      <!-- Filter Tabs -->
+      <div class="flex items-center space-x-1 bg-steam-dark/80 p-1 rounded-xl border border-steam-light/40 w-full md:w-auto">
+        <button onclick="setFilter('all')" id="filterAll" class="filter-tab px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-200 bg-steam-light/60 transition-all">
+          All (<span id="countAll">0</span>)
+        </button>
+        <button onclick="setFilter('unlocked')" id="filterUnlocked" class="filter-tab px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+          Unlocked (<span id="countUnlocked">0</span>)
+        </button>
+        <button onclick="setFilter('locked')" id="filterLocked" class="filter-tab px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+          Locked (<span id="countLocked">0</span>)
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="relative w-full md:w-80">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-xs text-slate-500"></i>
+        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search achievements..." 
+          class="w-full bg-steam-dark/80 border border-steam-light/60 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-steam-accent transition-all">
+        <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ACHIEVEMENTS GRID -->
+    <section>
+      <!-- Loading Skeleton / Spinner State -->
+      <div id="loadingState" class="hidden py-16 text-center space-y-3">
+        <div class="inline-block animate-spin text-steam-accent text-3xl">
+          <i class="fa-solid fa-circle-notch"></i>
+        </div>
+        <p class="text-sm font-medium text-slate-300">Fetching game schema & player stats from Steam API...</p>
+      </div>
+
+      <!-- Empty Filter Results -->
+      <div id="emptyState" class="hidden bg-steam-card border border-steam-light/30 rounded-2xl p-12 text-center">
+        <i class="fa-solid fa-ghost text-4xl text-slate-600 mb-3"></i>
+        <p class="text-sm font-bold text-slate-300">No achievements found</p>
+        <p class="text-xs text-slate-500 mt-1">Try broadening your search query or changing filters.</p>
+      </div>
+
+      <!-- Achievements Container -->
+      <div id="achievementsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-auto bg-steam-card border-t border-steam-light/30 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>Steam Achievement Tracker &bull; Powered by Steam Web API</p>
+      <p class="text-slate-600">App IDs: ETS2 (227300), ATS (270880), Cyberpunk 2077 (1091500)</p>
+    </div>
+  </footer>
+
+  <!-- APPLICATION SCRIPT -->
+  <script>
+    // --- DEMO DATA FOR INITIAL INSTANT PREVIEW (ETS2) ---
+    const DEMO_ACHIEVEMENTS = [
+      {
+        apiname: "chariot_of_fire",
+        displayName: "Chariot of Fire",
+        description: "Design and apply to your truck your own custom multi-color metallic paint.",
+        achieved: true,
+        unlocktime: 1672531199,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/4c3bd4842d76ffefd0a331f2ff04c1f1ef2e8b0b.jpg"
+      },
+      {
+        apiname: "pathfinder",
+        displayName: "Pathfinder",
+        description: "Discover at least 100% of the map.",
+        achieved: false,
+        unlocktime: 0,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/51296bf3c1ee14df0eb2620b12ebbfd52a7863ee.jpg"
+      },
+      {
+        apiname: "long_hauler",
+        displayName: "Long Hauler",
+        description: "Complete a delivery that was longer than 2,000 km.",
+        achieved: true,
+        unlocktime: 1684142000,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/e33d45efefae6563b7e77b6c507c3cf3a28ebf4b.jpg"
+      },
+      {
+        apiname: "profit_hunter",
+        displayName: "Profit Hunter",
+        description: "Complete a job worth more than €130,000 and over 2,200 km.",
+        achieved: true,
+        unlocktime: 1690000000,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/b8cf702e84c9873099951119561937ff7a884c5f.jpg"
+      },
+      {
+        apiname: "experience_beats_all",
+        displayName: "Experience Beats All!",
+        description: "Complete deliveries with all trailer types (Cargo, Machinery, Heavy, Oversized, Fragile).",
+        achieved: false,
+        unlocktime: 0,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/188b088bcf04ed350e4136208a0d9b4bfaaa63d3.jpg"
+      },
+      {
+        apiname: "national_company",
+        displayName: "National Company",
+        description: "Own a garage in every city in your starting country.",
+        achieved: true,
+        unlocktime: 1660000000,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/8d8bcf57f7eb063b455b5d38a08a28787889e4fa.jpg"
+      },
+      {
+        apiname: "property_magnate",
+        displayName: "Property Magnate",
+        description: "Own a garage in every city.",
+        achieved: false,
+        unlocktime: 0,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/1297587843b447cb029a28bf28a8d672cb7643ef.jpg"
+      },
+      {
+        apiname: "working_with_the_elite",
+        displayName: "Working with the Elite",
+        description: "Achieve 100% productivity for at least 5 large garages at the same time.",
+        achieved: false,
+        unlocktime: 0,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/8ef297801a21648a071597816df8ca3f24bf780f.jpg"
+      },
+      {
+        apiname: "head_hunter",
+        displayName: "Head Hunter",
+        description: "Discover all recruitment agencies.",
+        achieved: true,
+        unlocktime: 1655000000,
+        icon: "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/227300/21570d8a1f8bb22d3b259972cb7a8b301a9df2e8.jpg"
+      }
+    ];
+
+    // Game Titles Reference
+    const GAME_NAMES = {
+      "227300": "Euro Truck Simulator 2",
+      "270880": "American Truck Simulator",
+      "1091500": "Cyberpunk 2077",
+      "292030": "The Witcher 3: Wild Hunt",
+      "1151640": "Horizon Zero Dawn"
+    };
+
+    // --- APPLICATION STATE ---
+    let achievementsData = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let currentAppId = '227300';
+
+    // --- INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedCredentials();
+      loadDemoData(); // Default display demo on load for instant interactive view
+    });
+
+    // --- CREDENTIAL STORAGE ---
+    function loadSavedCredentials() {
+      const savedKey = localStorage.getItem('steam_api_key');
+      const savedId = localStorage.getItem('steam_64_id');
+      
+      if (savedKey) document.getElementById('apiKey').value = savedKey;
+      if (savedId) document.getElementById('steamId').value = savedId;
+    }
+
+    function saveCredentials() {
+      const remember = document.getElementById('rememberCreds').checked;
+      const key = document.getElementById('apiKey').value.trim();
+      const id = document.getElementById('steamId').value.trim();
+
+      if (remember) {
+        if (key) localStorage.setItem('steam_api_key', key);
+        if (id) localStorage.setItem('steam_64_id', id);
+      } else {
+        localStorage.removeItem('steam_api_key');
+        localStorage.removeItem('steam_64_id');
+      }
+    }
+
+    // --- UI CONTROLS ---
+    function toggleSettingsPanel() {
+      const panel = document.getElementById('settingsPanel');
+      panel.classList.toggle('hidden');
+    }
+
+    function toggleKeyVisibility() {
+      const input = document.getElementById('apiKey');
+      const icon = document.getElementById('keyEyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+
+    function handlePresetChange() {
+      const presetSelect = document.getElementById('gamePreset');
+      const customInput = document.getElementById('customAppId');
+      
+      if (presetSelect.value === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        currentAppId = presetSelect.value;
+      }
+    }
+
+    function getActiveAppId() {
+      const preset = document.getElementById('gamePreset').value;
+      if (preset === 'custom') {
+        return document.getElementById('customAppId').value.trim() || '227300';
+      }
+      return preset;
+    }
+
+    function showStatus(message, type = 'info') {
+      const banner = document.getElementById('statusMessage');
+      const text = document.getElementById('statusText');
+      const icon = document.getElementById('statusIcon');
+
+      banner.className = 'rounded-xl p-4 text-xs font-medium border transition-all flex items-center justify-between mb-4 ';
+      
+      if (type === 'error') {
+        banner.classList.add('bg-red-500/10', 'text-red-300', 'border-red-500/30');
+        icon.className = 'fa-solid fa-triangle-exclamation text-red-400 text-base';
+      } else if (type === 'success') {
+        banner.classList.add('bg-emerald-500/10', 'text-emerald-300', 'border-emerald-500/30');
+        icon.className = 'fa-solid fa-circle-check text-emerald-400 text-base';
+      } else {
+        banner.classList.add('bg-blue-500/10', 'text-blue-300', 'border-blue-500/30');
+        icon.className = 'fa-solid fa-circle-info text-blue-400 text-base';
+      }
+
+      text.textContent = message;
+      banner.classList.remove('hidden');
+    }
+
+    function dismissStatus() {
+      document.getElementById('statusMessage').classList.add('hidden');
+    }
+
+    // --- DATA LOADING ---
+    function loadDemoData() {
+      currentAppId = '227300';
+      document.getElementById('gamePreset').value = '227300';
+      document.getElementById('customAppId').classList.add('hidden');
+
+      achievementsData = DEMO_ACHIEVEMENTS;
+      updateDashboard(GAME_NAMES["227300"], "227300");
+      renderAchievements();
+      showStatus("Loaded mock Euro Truck Simulator 2 achievements in Demo Mode.", "info");
+    }
+
+    async function fetchWithCorsProxies(targetUrl) {
+      // Rotate through reliable CORS public proxies
+      const proxies = [
+        (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`
+      ];
+
+      let lastError = null;
+      for (let proxyFn of proxies) {
+        try {
+          const proxyUrl = proxyFn(targetUrl);
+          const res = await fetch(proxyUrl);
+          if (res.ok) {
+            const text = await res.text();
+            // Verify it didn't return an HTML error page
+            if (text.trim().startsWith("<")) {
+              throw new Error("Proxy returned HTML error page from Steam.");
+            }
+            return JSON.parse(text);
+          }
+        } catch (e) {
+          lastError = e;
+        }
+      }
+      throw lastError || new Error("All CORS proxies failed to retrieve data.");
+    }
+
+    async function fetchAchievementsFromAPI() {
+      const key = document.getElementById('apiKey').value.trim();
+      const steamId = document.getElementById('steamId').value.trim();
+      const appId = getActiveAppId();
+
+      if (!key || !steamId) {
+        showStatus("Please enter your Steam Web API Key and 64-bit Steam ID.", "error");
+        return;
+      }
+
+      saveCredentials();
+
+      // UI Loading state
+      document.getElementById('loadingState').classList.remove('hidden');
+      document.getElementById('achievementsGrid').innerHTML = '';
+      document.getElementById('fetchBtn').disabled = true;
+      document.getElementById('fetchIcon').classList.add('animate-spin');
+
+      try {
+        const schemaTargetUrl = `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${key}&appid=${appId}`;
+        const playerTargetUrl = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${key}&steamid=${steamId}&appid=${appId}`;
+
+        // Fetch schema and player stats via CORS proxies
+        const [schemaData, playerData] = await Promise.all([
+          fetchWithCorsProxies(schemaTargetUrl),
+          fetchWithCorsProxies(playerTargetUrl)
+        ]);
+
+        if (!playerData.playerstats || !playerData.playerstats.achievements) {
+          throw new Error("Could not retrieve player achievements. Ensure your Steam Profile 'Game Details' are set to Public and App ID is correct.");
+        }
+
+        // Map schema metadata
+        const schemaList = schemaData?.game?.availableGameStats?.achievements || [];
+        const schemaMap = {};
+        schemaList.forEach(item => {
+          schemaMap[item.name] = {
+            displayName: item.displayName || item.name,
+            description: item.description || "",
+            icon: item.icon
+          };
+        });
+
+        // Combine
+        achievementsData = playerData.playerstats.achievements.map(ach => {
+          const meta = schemaMap[ach.apiname] || {};
+          return {
+            apiname: ach.apiname,
+            displayName: meta.displayName || ach.apiname,
+            description: meta.description || "",
+            achieved: ach.achieved === 1,
+            unlocktime: ach.unlocktime || 0,
+            icon: meta.icon || "https://placehold.co/64x64/2a475e/ffffff?text=Steam"
+          };
+        });
+
+        const gameName = GAME_NAMES[appId] || `Game #${appId}`;
+        currentAppId = appId;
+        updateDashboard(gameName, appId);
+        renderAchievements();
+        showStatus(`Successfully fetched ${achievementsData.length} achievements for ${gameName}!`, "success");
+
+      } catch (err) {
+        console.error(err);
+        showStatus(err.message || "Error fetching data from Steam API. Check your API Key, Steam ID, or profile privacy settings.", "error");
+      } finally {
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('fetchBtn').disabled = false;
+        document.getElementById('fetchIcon').classList.remove('animate-spin');
+      }
+    }
+
+    // --- DASHBOARD UPDATES ---
+    function updateDashboard(gameTitle, appId) {
+      const total = achievementsData.length;
+      const unlocked = achievementsData.filter(a => a.achieved).length;
+      const locked = total - unlocked;
+      const percent = total > 0 ? Math.round((unlocked / total) * 100) : 0;
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statUnlocked').textContent = unlocked;
+      document.getElementById('statRemaining').textContent = `${locked} Locked remaining`;
+      document.getElementById('statPercent').textContent = `${percent}%`;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+      document.getElementById('statGameTitle').textContent = gameTitle;
+      document.getElementById('statAppId').textContent = `App ID: ${appId}`;
+
+      document.getElementById('countAll').textContent = total;
+      document.getElementById('countUnlocked').textContent = unlocked;
+      document.getElementById('countLocked').textContent = locked;
+    }
+
+    // --- FILTER & SEARCH ---
+    function setFilter(filterType) {
+      currentFilter = filterType;
+
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.className = 'filter-tab px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+      });
+
+      const activeBtn = document.getElementById(`filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`);
+      if (activeBtn) {
+        activeBtn.className = 'filter-tab px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-200 bg-steam-light/60 transition-all';
+      }
+
+      renderAchievements();
+    }
+
+    function handleSearch() {
+      const input = document.getElementById('searchInput');
+      searchQuery = input.value.trim().toLowerCase();
+      
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      renderAchievements();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      searchQuery = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderAchievements();
+    }
+
+    // --- RENDER ACHIEVEMENTS ---
+    function renderAchievements() {
+      const grid = document.getElementById('achievementsGrid');
+      const emptyState = document.getElementById('emptyState');
+
+      let filtered = achievementsData.filter(item => {
+        // Filter by Tab
+        if (currentFilter === 'unlocked' && !item.achieved) return false;
+        if (currentFilter === 'locked' && item.achieved) return false;
+
+        // Search Query
+        if (searchQuery) {
+          const title = item.displayName.toLowerCase();
+          const desc = item.description.toLowerCase();
+          return title.includes(searchQuery) || desc.includes(searchQuery);
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(item => {
+        const isUnlocked = item.achieved;
+        const formattedDate = isUnlocked && item.unlocktime > 0 
+          ? new Date(item.unlocktime * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : 'Locked';
+
+        const placeholderIcon = `https://placehold.co/64x64/171a21/66c0f4?text=${encodeURIComponent(item.displayName.substring(0, 2))}`;
+
+        return `
+          <div class="bg-steam-card border ${isUnlocked ? 'border-steam-gold/40 glow-gold' : 'border-steam-light/30'} rounded-2xl p-4 flex space-x-3.5 items-start transition-all duration-200 hover:border-steam-accent/60 group relative overflow-hidden">
+            
+            <!-- Side accent bar -->
+            <div class="absolute left-0 top-0 bottom-0 w-1 ${isUnlocked ? 'bg-gradient-to-b from-steam-gold to-amber-500' : 'bg-slate-700'}"></div>
+
+            <!-- Icon -->
+            <div class="relative shrink-0">
+              <img src="${item.icon}" 
+                   onerror="this.onerror=null; this.src='${placeholderIcon}';"
+                   alt="${item.displayName}" 
+                   class="w-14 h-14 rounded-xl border ${isUnlocked ? 'border-steam-gold shadow-md' : 'border-steam-light/40 grayscale-filter'} object-cover">
+              ${isUnlocked ? `
+                <div class="absolute -bottom-1 -right-1 bg-steam-gold text-slate-900 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold shadow">
+                  <i class="fa-solid fa-check"></i>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 min-w-0 space-y-1">
+              <div class="flex justify-between items-start gap-2">
+                <h3 class="text-xs font-bold ${isUnlocked ? 'text-white' : 'text-slate-400'} truncate group-hover:text-steam-accent transition-colors">
+                  ${item.displayName}
+                </h3>
+              </div>
+
+              <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                ${item.description || '<span class="italic text-slate-600">Hidden or no description provided.</span>'}
+              </p>
+
+              <div class="pt-1.5 flex items-center justify-between text-[10px]">
+                <span class="${isUnlocked ? 'text-emerald-400 font-semibold flex items-center gap-1' : 'text-slate-500'}">
+                  <i class="fa-solid ${isUnlocked ? 'fa-lock-open text-xs' : 'fa-lock text-xs'}"></i>
+                  ${isUnlocked ? 'Unlocked' : 'Locked'}
+                </span>
+                <span class="text-slate-500 font-mono">
+                  ${formattedDate}
+                </span>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

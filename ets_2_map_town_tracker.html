@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETS 2 Map & Town Tracker</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ets: {
+                            orange: '#ff9900',
+                            gold: '#ffb700',
+                            dark: '#0e141d',
+                            panel: '#161f2c',
+                            border: '#263445',
+                            accent: '#38bdf8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #map-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 350px;
+            background-color: #0e141d;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            z-index: 1;
+        }
+
+        /* Marker CSS Styles */
+        .city-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: transform 0.15s ease-out;
+        }
+        .city-marker:hover {
+            transform: scale(1.35);
+            z-index: 9999 !important;
+        }
+        .city-marker-inner {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 8px rgba(0,0,0,0.8);
+        }
+        .city-marker-visited .city-marker-inner {
+            background-color: #10b981; /* Emerald Green */
+            border-color: #ecfdf5;
+            box-shadow: 0 0 10px #10b981;
+        }
+        .city-marker-unvisited .city-marker-inner {
+            background-color: #ff9900; /* ETS Orange */
+            border-color: #ffffff;
+            box-shadow: 0 0 8px #ff9900;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #243042;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #364861;
+        }
+
+        /* Leaflet Dark Popup Customization */
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background-color: #161f2c !important;
+            color: #f8fafc !important;
+            border: 1px solid #263445;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+            border-radius: 12px !important;
+        }
+        .leaflet-popup-content {
+            margin: 12px 14px !important;
+            line-height: 1.4 !important;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col md:flex-row overflow-hidden bg-slate-950 text-slate-100">
+
+    <!-- Sidebar Panel -->
+    <aside id="sidebar" class="w-full md:w-[440px] bg-slate-900 border-r border-slate-800 flex flex-col h-1/2 md:h-full z-20 shadow-2xl shrink-0">
+        
+        <!-- Header -->
+        <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-ets-orange text-slate-950 p-2 rounded-xl font-black text-xl flex items-center justify-center w-11 h-11 shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-truck-front"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                        ETS 2 <span class="text-[10px] bg-ets-orange/20 text-ets-orange px-2 py-0.5 rounded border border-ets-orange/30 font-bold uppercase">CHECKLIST</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Full Map & Town Visited Tracker</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1">
+                <button id="export-btn" title="Export Progress (JSON)" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button id="import-btn-trigger" title="Import Progress (JSON)" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-upload"></i>
+                </button>
+                <input type="file" id="import-file-input" class="hidden" accept=".json">
+                
+                <button id="reset-all-btn" title="Reset All Progress" class="text-slate-400 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Overall Progress Card -->
+        <div class="p-4 bg-slate-900 border-b border-slate-800 space-y-3">
+            <div class="flex justify-between items-end">
+                <div>
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Europe Completion</span>
+                    <div class="text-2xl font-black text-white flex items-baseline gap-2">
+                        <span id="visited-count">0</span>
+                        <span class="text-sm font-normal text-slate-400">/ <span id="total-count">0</span> Cities</span>
+                    </div>
+                </div>
+                <span id="overall-percentage" class="text-2xl font-black text-ets-orange">0%</span>
+            </div>
+            
+            <div class="w-full bg-slate-950 rounded-full h-3 overflow-hidden p-0.5 border border-slate-800">
+                <div id="overall-progress-bar" class="bg-gradient-to-r from-ets-orange via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500 w-0"></div>
+            </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="p-3 bg-slate-950 border-b border-slate-800 space-y-2">
+            <!-- Search -->
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                <input type="text" id="search-input" placeholder="Search town or country..." 
+                    class="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-ets-orange transition">
+                <button id="clear-search" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <select id="country-filter" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-ets-orange">
+                    <option value="ALL">All Countries</option>
+                    <!-- Populated dynamically -->
+                </select>
+
+                <select id="status-filter" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-ets-orange">
+                    <option value="ALL">All Status</option>
+                    <option value="VISITED">Visited Only</option>
+                    <option value="UNVISITED">Unvisited Only</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Cities Accordion Checklist -->
+        <div id="city-list-container" class="flex-1 overflow-y-auto divide-y divide-slate-800/60 bg-slate-900">
+            <!-- Dynamic Content -->
+        </div>
+
+        <!-- Footer -->
+        <div class="p-2.5 bg-slate-950 border-t border-slate-800 text-center text-[11px] text-slate-500 flex justify-between items-center px-4">
+            <span id="country-count-badge">0 Countries Loaded</span>
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Saved Locally
+            </span>
+        </div>
+    </aside>
+
+    <!-- Map Viewport -->
+    <main class="flex-1 relative h-1/2 md:h-full bg-slate-950">
+        <div id="map-wrapper">
+            <div id="map"></div>
+        </div>
+
+        <!-- Map Legend -->
+        <div class="absolute top-4 right-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 rounded-xl p-3 shadow-2xl text-xs space-y-2 hidden sm:block">
+            <div class="font-bold text-slate-300 border-b border-slate-800 pb-1.5 flex justify-between items-center gap-4">
+                <span>Map Legend</span>
+                <i class="fa-solid fa-layer-group text-slate-500"></i>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-emerald-200 inline-block shadow-sm shadow-emerald-500/50"></span>
+                <span class="text-slate-300 font-medium">Visited Town</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-ets-orange border border-white inline-block shadow-sm shadow-orange-500/50"></span>
+                <span class="text-slate-300 font-medium">Unvisited Town</span>
+            </div>
+        </div>
+
+        <!-- Floating Recenter Button -->
+        <div class="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
+            <button id="recenter-map-btn" title="Recenter Map over Europe" 
+                class="bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 w-10 h-10 rounded-xl shadow-xl flex items-center justify-center transition">
+                <i class="fa-solid fa-crosshairs text-base"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- App Logic -->
+    <script>
+        // Full parsed dataset from user input text file
+        const ETS2_FULL_DATASET = [
+            // UK
+            { name: "Glasgow", country: "United Kingdom", lat: 55.864, lng: -4.251 },
+            { name: "Carlisle", country: "United Kingdom", lat: 54.892, lng: -2.932 },
+            { name: "Grimsby", country: "United Kingdom", lat: 53.567, lng: -0.080 },
+            { name: "Cambridge", country: "United Kingdom", lat: 52.205, lng: 0.121 },
+            { name: "Felixstowe", country: "United Kingdom", lat: 51.963, lng: 1.351 },
+            { name: "Southampton", country: "United Kingdom", lat: 50.909, lng: -1.404 },
+            { name: "Aberdeen", country: "United Kingdom", lat: 57.149, lng: -2.094 },
+            { name: "Edinburgh", country: "United Kingdom", lat: 55.953, lng: -3.188 },
+            { name: "Newcastle-upon Tyne", country: "United Kingdom", lat: 54.978, lng: -1.617 },
+            { name: "Liverpool", country: "United Kingdom", lat: 53.408, lng: -2.991 },
+            { name: "Manchester", country: "United Kingdom", lat: 53.480, lng: -2.242 },
+            { name: "Sheffield", country: "United Kingdom", lat: 53.381, lng: -1.470 },
+            { name: "Birmingham", country: "United Kingdom", lat: 52.486, lng: -1.890 },
+            { name: "Swansea", country: "United Kingdom", lat: 51.621, lng: -3.943 },
+            { name: "Plymouth", country: "United Kingdom", lat: 50.375, lng: -4.142 },
+            { name: "Dover", country: "United Kingdom", lat: 51.127, lng: 1.313 },
+            { name: "London", country: "United Kingdom", lat: 51.507, lng: -0.127 },
+            { name: "Cardiff", country: "United Kingdom", lat: 51.481, lng: -3.179 },
+
+            // France
+            { name: "Brest", country: "France", lat: 48.390, lng: -4.486 },
+            { name: "Roscoff", country: "France", lat: 48.726, lng: -3.984 },
+            { name: "Rennes", country: "France", lat: 48.117, lng: -1.677 },
+            { name: "Nantes", country: "France", lat: 47.218, lng: -1.553 },
+            { name: "Le Havre", country: "France", lat: 49.494, lng: 0.107 },
+            { name: "Paluel", country: "France", lat: 49.832, lng: 0.630 },
+            { name: "Calais", country: "France", lat: 50.951, lng: 1.858 },
+            { name: "Lille", country: "France", lat: 50.629, lng: 3.057 },
+            { name: "Paris", country: "France", lat: 48.856, lng: 2.352 },
+            { name: "Reims", country: "France", lat: 49.258, lng: 4.031 },
+            { name: "Metz", country: "France", lat: 49.119, lng: 6.175 },
+            { name: "Strasburg", country: "France", lat: 48.573, lng: 7.752 },
+            { name: "Saint-Laurent", country: "France", lat: 45.143, lng: 5.313 },
+            { name: "Dijon", country: "France", lat: 47.322, lng: 5.041 },
+            { name: "Civaux", country: "France", lat: 46.444, lng: 0.665 },
+            { name: "La Rochelle", country: "France", lat: 46.160, lng: -1.151 },
+            { name: "Limoges", country: "France", lat: 45.833, lng: 1.261 },
+            { name: "Clermont-Ferrand", country: "France", lat: 45.777, lng: 3.087 },
+            { name: "Lyon", country: "France", lat: 45.764, lng: 4.835 },
+            { name: "Bordeaux", country: "France", lat: 44.837, lng: -0.579 },
+            { name: "Saint-Alban-du-Rhone", country: "France", lat: 45.424, lng: 4.760 },
+            { name: "Golfech", country: "France", lat: 44.113, lng: 0.852 },
+            { name: "Bayonne", country: "France", lat: 43.492, lng: -1.474 },
+            { name: "Lacq", country: "France", lat: 43.411, lng: -0.619 },
+            { name: "Toulouse", country: "France", lat: 43.604, lng: 1.444 },
+            { name: "Montpellier", country: "France", lat: 43.610, lng: 3.876 },
+            { name: "Marseille", country: "France", lat: 43.296, lng: 5.369 },
+            { name: "Nice", country: "France", lat: 43.710, lng: 7.262 },
+
+            // Corsica
+            { name: "Bastia", country: "Corsica", lat: 42.702, lng: 9.450 },
+            { name: "L'Île-Rousse", country: "Corsica", lat: 42.634, lng: 8.937 },
+            { name: "Calvi", country: "Corsica", lat: 42.568, lng: 8.757 },
+            { name: "Ajaccio", country: "Corsica", lat: 41.927, lng: 8.736 },
+            { name: "Porto-Vecchio", country: "Corsica", lat: 41.591, lng: 9.279 },
+            { name: "Boifacio", country: "Corsica", lat: 41.387, lng: 9.159 },
+
+            // Spain
+            { name: "A Coruña", country: "Spain", lat: 43.362, lng: -8.411 },
+            { name: "Navia", country: "Spain", lat: 43.538, lng: -6.721 },
+            { name: "Vigo", country: "Spain", lat: 42.240, lng: -8.720 },
+            { name: "Gijón", country: "Spain", lat: 43.535, lng: -5.661 },
+            { name: "Santander", country: "Spain", lat: 43.462, lng: -3.809 },
+            { name: "Bilbao", country: "Spain", lat: 43.263, lng: -2.935 },
+            { name: "Pamplona", country: "Spain", lat: 42.812, lng: -1.645 },
+            { name: "Zaragoza", country: "Spain", lat: 41.648, lng: -0.889 },
+            { name: "Lleida", country: "Spain", lat: 41.617, lng: 0.626 },
+            { name: "Barcelona", country: "Spain", lat: 41.385, lng: 2.173 },
+            { name: "Terragona", country: "Spain", lat: 41.118, lng: 1.244 },
+            { name: "Vandellòs", country: "Spain", lat: 40.992, lng: 0.832 },
+            { name: "Puerto de Sagunto", country: "Spain", lat: 39.660, lng: -0.218 },
+            { name: "Valencia", country: "Spain", lat: 39.469, lng: -0.376 },
+            { name: "Murcia", country: "Spain", lat: 37.992, lng: -1.130 },
+            { name: "Albacete", country: "Spain", lat: 38.994, lng: -1.858 },
+            { name: "Almería", country: "Spain", lat: 36.838, lng: -2.459 },
+            { name: "El Ejido", country: "Spain", lat: 36.776, lng: -2.813 },
+            { name: "Málaga", country: "Spain", lat: 36.721, lng: -4.421 },
+            { name: "Algeciras", country: "Spain", lat: 36.130, lng: -5.450 },
+            { name: "Granada", country: "Spain", lat: 37.177, lng: -3.598 },
+            { name: "Mengíbar", country: "Spain", lat: 37.969, lng: -3.808 },
+            { name: "Bailén", country: "Spain", lat: 38.096, lng: -3.777 },
+            { name: "Puertollano", country: "Spain", lat: 38.687, lng: -4.108 },
+            { name: "Córdoba", country: "Spain", lat: 37.888, lng: -4.779 },
+            { name: "Seville", country: "Spain", lat: 37.389, lng: -5.984 },
+            { name: "Huelva", country: "Spain", lat: 37.261, lng: -6.944 },
+            { name: "Badajoz", country: "Spain", lat: 38.879, lng: -6.970 },
+            { name: "Ciudad Real", country: "Spain", lat: 38.984, lng: -3.927 },
+            { name: "Madrid", country: "Spain", lat: 40.416, lng: -3.703 },
+            { name: "Soria", country: "Spain", lat: 41.766, lng: -2.468 },
+            { name: "Burgos", country: "Spain", lat: 42.343, lng: -3.696 },
+            { name: "Almaraz", country: "Spain", lat: 39.814, lng: -5.677 },
+            { name: "Salamanca", country: "Spain", lat: 40.970, lng: -5.663 },
+            { name: "Valladolid", country: "Spain", lat: 41.652, lng: -4.724 },
+            { name: "León", country: "Spain", lat: 42.598, lng: -5.567 },
+            { name: "O Barco de Valdeorras", country: "Spain", lat: 42.416, lng: -6.983 },
+
+            // Portugal
+            { name: "Porto", country: "Portugal", lat: 41.157, lng: -8.629 },
+            { name: "Guarda", country: "Portugal", lat: 40.537, lng: -7.268 },
+            { name: "Coimbra", country: "Portugal", lat: 40.203, lng: -8.410 },
+            { name: "Lisbon", country: "Portugal", lat: 38.722, lng: -9.139 },
+            { name: "Ponte de Sor", country: "Portugal", lat: 39.253, lng: -8.010 },
+            { name: "Cortiçadas de Lavre", country: "Portugal", lat: 38.783, lng: -8.361 },
+            { name: "Setúbal", country: "Portugal", lat: 38.524, lng: -8.888 },
+            { name: "Evora", country: "Portugal", lat: 38.571, lng: -7.913 },
+            { name: "Sines", country: "Portugal", lat: 37.956, lng: -8.864 },
+            { name: "Beja", country: "Portugal", lat: 38.015, lng: -7.863 },
+            { name: "Faro", country: "Portugal", lat: 37.019, lng: -7.930 },
+            { name: "Olhão", country: "Portugal", lat: 37.027, lng: -7.841 },
+
+            // Switzerland
+            { name: "Geneva", country: "Switzerland", lat: 46.204, lng: 6.143 },
+            { name: "Bern", country: "Switzerland", lat: 46.948, lng: 7.447 },
+            { name: "Zürich", country: "Switzerland", lat: 47.376, lng: 8.541 },
+
+            // Italy
+            { name: "Catania", country: "Italy", lat: 37.507, lng: 15.087 },
+            { name: "Palermo", country: "Italy", lat: 38.115, lng: 13.361 },
+            { name: "Messina", country: "Italy", lat: 38.193, lng: 15.554 },
+            { name: "Villa San Giovanni", country: "Italy", lat: 38.217, lng: 15.637 },
+            { name: "Catanzaro", country: "Italy", lat: 38.910, lng: 16.587 },
+            { name: "Taranto", country: "Italy", lat: 40.476, lng: 17.247 },
+            { name: "Bari", country: "Italy", lat: 41.117, lng: 16.871 },
+            { name: "Naples", country: "Italy", lat: 40.851, lng: 14.268 },
+            { name: "Cassino", country: "Italy", lat: 41.492, lng: 13.830 },
+            { name: "Rome", country: "Italy", lat: 41.902, lng: 12.496 },
+            { name: "Pescara", country: "Italy", lat: 42.461, lng: 14.215 },
+            { name: "Terni", country: "Italy", lat: 42.564, lng: 12.641 },
+            { name: "Ancona", country: "Italy", lat: 43.615, lng: 13.518 },
+            { name: "Livorno", country: "Italy", lat: 43.548, lng: 10.310 },
+            { name: "Florence", country: "Italy", lat: 43.769, lng: 11.255 },
+            { name: "Bologna", country: "Italy", lat: 44.494, lng: 11.342 },
+            { name: "Parma", country: "Italy", lat: 44.801, lng: 10.327 },
+            { name: "Genoa", country: "Italy", lat: 44.405, lng: 8.946 },
+            { name: "Suzzara", country: "Italy", lat: 44.993, lng: 10.748 },
+            { name: "Venice", country: "Italy", lat: 45.440, lng: 12.315 },
+            { name: "Verona", country: "Italy", lat: 45.438, lng: 10.991 },
+            { name: "Milan", country: "Italy", lat: 45.464, lng: 9.190 },
+            { name: "Turin", country: "Italy", lat: 45.070, lng: 7.686 },
+            { name: "Trieste", country: "Italy", lat: 45.649, lng: 13.776 },
+            { name: "Sassari", country: "Italy", lat: 40.725, lng: 8.555 },
+            { name: "Olbia", country: "Italy", lat: 40.921, lng: 9.498 },
+            { name: "Cagliari", country: "Italy", lat: 39.223, lng: 9.121 },
+
+            // Belgium
+            { name: "Brussels", country: "Belgium", lat: 50.850, lng: 4.351 },
+            { name: "Liège", country: "Belgium", lat: 50.632, lng: 5.567 },
+            { name: "Antwerp", country: "Belgium", lat: 51.219, lng: 4.402 },
+
+            // Luxembourg
+            { name: "Luxembourg", country: "Luxembourg", lat: 49.611, lng: 6.131 },
+
+            // Netherlands
+            { name: "Groningen", country: "Netherlands", lat: 53.219, lng: 6.566 },
+            { name: "Amsterdam", country: "Netherlands", lat: 52.367, lng: 4.904 },
+            { name: "Rotterdam", country: "Netherlands", lat: 51.924, lng: 4.477 },
+            { name: "Eindhoven", country: "Netherlands", lat: 51.441, lng: 5.469 },
+
+            // Germany
+            { name: "Duisburg", country: "Germany", lat: 51.434, lng: 6.762 },
+            { name: "Düsseldorf", country: "Germany", lat: 51.227, lng: 6.776 },
+            { name: "Cologne", country: "Germany", lat: 50.937, lng: 6.960 },
+            { name: "Dortmund", country: "Germany", lat: 51.513, lng: 7.465 },
+            { name: "Osnabrück", country: "Germany", lat: 52.279, lng: 8.047 },
+            { name: "Bremen", country: "Germany", lat: 53.079, lng: 8.801 },
+            { name: "Hamburg", country: "Germany", lat: 53.551, lng: 9.993 },
+            { name: "Kiel", country: "Germany", lat: 54.323, lng: 10.122 },
+            { name: "Travemünde", country: "Germany", lat: 53.957, lng: 10.866 },
+            { name: "Rostock", country: "Germany", lat: 54.092, lng: 12.099 },
+            { name: "Berlin", country: "Germany", lat: 52.520, lng: 13.405 },
+            { name: "Hannover", country: "Germany", lat: 52.375, lng: 9.732 },
+            { name: "Magdeburg", country: "Germany", lat: 52.120, lng: 11.627 },
+            { name: "Leipzig", country: "Germany", lat: 51.340, lng: 12.373 },
+            { name: "Dresden", country: "Germany", lat: 51.050, lng: 13.737 },
+            { name: "Erfurt", country: "Germany", lat: 50.984, lng: 11.029 },
+            { name: "Kassel", country: "Germany", lat: 51.312, lng: 9.479 },
+            { name: "Frankfurt am Main", country: "Germany", lat: 50.110, lng: 8.682 },
+            { name: "Nuremberg", country: "Germany", lat: 49.452, lng: 11.076 },
+            { name: "Mannheim", country: "Germany", lat: 49.487, lng: 8.466 },
+            { name: "Stuttgart", country: "Germany", lat: 48.775, lng: 9.182 },
+            { name: "Munich", country: "Germany", lat: 48.135, lng: 11.582 },
+
+            // Austria
+            { name: "Innsbruck", country: "Austria", lat: 47.269, lng: 11.404 },
+            { name: "Salzburg", country: "Austria", lat: 47.809, lng: 13.055 },
+            { name: "Linz", country: "Austria", lat: 48.306, lng: 14.285 },
+            { name: "Graz", country: "Austria", lat: 47.070, lng: 15.439 },
+            { name: "Klagenfurt am Wörthersee", country: "Austria", lat: 46.624, lng: 14.307 },
+
+            // Czechia
+            { name: "Prague", country: "Czechia", lat: 50.075, lng: 14.437 },
+            { name: "Ostrava", country: "Czechia", lat: 49.820, lng: 18.262 },
+            { name: "Brno", country: "Czechia", lat: 49.195, lng: 16.608 },
+
+            // Poland
+            { name: "Szczecin", country: "Poland", lat: 53.428, lng: 14.552 },
+            { name: "Poznań", country: "Poland", lat: 52.406, lng: 16.929 },
+            { name: "Wrocław", country: "Poland", lat: 51.110, lng: 17.038 },
+            { name: "Katowice", country: "Poland", lat: 50.264, lng: 19.023 },
+            { name: "Kraków", country: "Poland", lat: 50.064, lng: 19.944 },
+            { name: "Lublin", country: "Poland", lat: 51.246, lng: 22.568 },
+            { name: "Warsaw", country: "Poland", lat: 52.229, lng: 21.012 },
+            { name: "Białystok", country: "Poland", lat: 53.132, lng: 23.168 },
+            { name: "Olsztyn", country: "Poland", lat: 53.778, lng: 20.480 },
+            { name: "Gdańsk", country: "Poland", lat: 54.352, lng: 18.646 },
+            { name: "Łódź", country: "Poland", lat: 51.759, lng: 19.456 },
+
+            // Slovakia
+            { name: "Košice", country: "Slovakia", lat: 48.716, lng: 21.261 },
+            { name: "Banská Bystrica", country: "Slovakia", lat: 48.736, lng: 19.146 },
+            { name: "Bratislava", country: "Slovakia", lat: 48.148, lng: 17.107 },
+
+            // Hungary
+            { name: "Budapest", country: "Hungary", lat: 47.497, lng: 19.040 },
+            { name: "Debrecen", country: "Hungary", lat: 47.531, lng: 21.627 },
+            { name: "Pécs", country: "Hungary", lat: 46.072, lng: 18.232 },
+            { name: "Szeged", country: "Hungary", lat: 46.253, lng: 20.148 },
+
+            // Romania
+            { name: "Cluj-Napoca", country: "Romania", lat: 46.771, lng: 23.623 },
+            { name: "Târgu Mureș", country: "Romania", lat: 46.545, lng: 24.562 },
+            { name: "Bacău", country: "Romania", lat: 46.567, lng: 26.914 },
+            { name: "Iași", country: "Romania", lat: 47.158, lng: 27.601 },
+            { name: "Galați", country: "Romania", lat: 45.435, lng: 28.008 },
+            { name: "Cernavoda", country: "Romania", lat: 44.337, lng: 28.033 },
+            { name: "Constanța", country: "Romania", lat: 44.179, lng: 28.649 },
+            { name: "Mangalia", country: "Romania", lat: 43.812, lng: 28.582 },
+            { name: "Călărași", country: "Romania", lat: 44.201, lng: 27.332 },
+            { name: "Bucharest", country: "Romania", lat: 44.432, lng: 26.103 },
+            { name: "Craiova", country: "Romania", lat: 44.330, lng: 23.794 },
+            { name: "Reșița", country: "Romania", lat: 45.298, lng: 21.888 },
+            { name: "Timișoara", country: "Romania", lat: 45.753, lng: 21.225 },
+            { name: "Hunedoara", country: "Romania", lat: 45.755, lng: 22.902 },
+            { name: "Pitești", country: "Romania", lat: 44.856, lng: 24.869 },
+            { name: "Brașov", country: "Romania", lat: 45.658, lng: 25.601 },
+
+            // Bulgaria
+            { name: "Kozloduy", country: "Bulgaria", lat: 43.782, lng: 23.722 },
+            { name: "Pleven", country: "Bulgaria", lat: 43.417, lng: 24.616 },
+            { name: "Ruse", country: "Bulgaria", lat: 43.835, lng: 25.965 },
+            { name: "Varna", country: "Bulgaria", lat: 43.214, lng: 27.914 },
+            { name: "Burgas", country: "Bulgaria", lat: 42.504, lng: 27.462 },
+            { name: "Veliko Tarnovo", country: "Bulgaria", lat: 43.075, lng: 25.617 },
+            { name: "Karlovo", country: "Bulgaria", lat: 42.642, lng: 24.808 },
+            { name: "Pirdrop", country: "Bulgaria", lat: 42.699, lng: 24.180 },
+            { name: "Sofia", country: "Bulgaria", lat: 42.697, lng: 23.321 },
+            { name: "Pernik", country: "Bulgaria", lat: 42.605, lng: 23.037 },
+            { name: "Plovdiv", country: "Bulgaria", lat: 42.135, lng: 24.745 },
+
+            // Türkiye
+            { name: "Edirne", country: "Türkiye", lat: 41.677, lng: 26.555 },
+            { name: "Istanbul", country: "Türkiye", lat: 41.008, lng: 28.978 },
+            { name: "Tekirdağ", country: "Türkiye", lat: 40.978, lng: 27.511 },
+
+            // Greece
+            { name: "Kavala", country: "Greece", lat: 40.939, lng: 24.412 },
+            { name: "Thessaloniki", country: "Greece", lat: 40.640, lng: 22.944 },
+            { name: "Larissa", country: "Greece", lat: 39.639, lng: 22.419 },
+            { name: "Ioannina", country: "Greece", lat: 39.665, lng: 20.853 },
+            { name: "Trikala", country: "Greece", lat: 39.555, lng: 21.767 },
+            { name: "Mitilini", country: "Greece", lat: 39.104, lng: 26.554 },
+            { name: "Chios", country: "Greece", lat: 38.367, lng: 26.135 },
+            { name: "Athens", country: "Greece", lat: 37.983, lng: 23.727 },
+            { name: "Lamia", country: "Greece", lat: 38.895, lng: 22.434 },
+            { name: "Patras", country: "Greece", lat: 38.246, lng: 21.734 },
+            { name: "Kalamata", country: "Greece", lat: 37.038, lng: 22.114 },
+            { name: "Rhodes", country: "Greece", lat: 36.434, lng: 28.217 },
+            { name: "Chania", country: "Greece", lat: 35.513, lng: 24.018 },
+            { name: "Heraklion", country: "Greece", lat: 35.338, lng: 25.144 },
+
+            // Albania
+            { name: "Vlorë", country: "Albania", lat: 40.466, lng: 19.490 },
+            { name: "Fier", country: "Albania", lat: 40.723, lng: 19.556 },
+            { name: "Durrës", country: "Albania", lat: 41.323, lng: 19.441 },
+            { name: "Tiranë", country: "Albania", lat: 41.327, lng: 19.818 },
+
+            // North Macedonia
+            { name: "Skopje", country: "North Macedonia", lat: 41.998, lng: 21.425 },
+            { name: "Bitola", country: "North Macedonia", lat: 41.031, lng: 21.334 },
+
+            // Kosovo
+            { name: "Pristinia", country: "Kosovo", lat: 42.662, lng: 21.165 },
+
+            // Montenegro
+            { name: "Podgorcia", country: "Montenegro", lat: 42.430, lng: 19.260 },
+            { name: "Niksic", country: "Montenegro", lat: 42.773, lng: 18.944 },
+            { name: "Bijelo Polje", country: "Montenegro", lat: 43.038, lng: 19.747 },
+
+            // Serbia
+            { name: "Novi Sad", country: "Serbia", lat: 45.267, lng: 19.833 },
+            { name: "Belgrade", country: "Serbia", lat: 44.786, lng: 20.448 },
+            { name: "Karakaj", country: "Serbia", lat: 44.363, lng: 19.102 },
+            { name: "Kragujevac", country: "Serbia", lat: 44.012, lng: 20.911 },
+            { name: "Niš", country: "Serbia", lat: 43.320, lng: 21.895 },
+
+            // Bosnia & Herzegovina
+            { name: "Bihać", country: "Bosnia & Herzegovina", lat: 44.816, lng: 15.870 },
+            { name: "Banja Luka", country: "Bosnia & Herzegovina", lat: 44.772, lng: 17.191 },
+            { name: "Zenica", country: "Bosnia & Herzegovina", lat: 44.203, lng: 17.907 },
+            { name: "Tuzla", country: "Bosnia & Herzegovina", lat: 44.538, lng: 18.675 },
+            { name: "Sarajevo", country: "Bosnia & Herzegovina", lat: 43.856, lng: 18.413 },
+            { name: "Mostar", country: "Bosnia & Herzegovina", lat: 43.343, lng: 17.807 },
+
+            // Croatia
+            { name: "Split", country: "Croatia", lat: 43.508, lng: 16.440 },
+            { name: "Zadar", country: "Croatia", lat: 44.119, lng: 15.231 },
+            { name: "Rijeka", country: "Croatia", lat: 45.327, lng: 14.442 },
+            { name: "Zagreb", country: "Croatia", lat: 45.815, lng: 15.981 },
+            { name: "Osijek", country: "Croatia", lat: 45.555, lng: 18.695 },
+
+            // Slovenia
+            { name: "Novo Mesto", country: "Slovenia", lat: 45.803, lng: 15.168 },
+            { name: "Koper", country: "Slovenia", lat: 45.548, lng: 13.730 },
+            { name: "Ljubljana", country: "Slovenia", lat: 46.056, lng: 14.505 },
+            { name: "Maribor", country: "Slovenia", lat: 46.554, lng: 15.645 },
+
+            // Russia
+            { name: "Kaliningrad", country: "Russia", lat: 54.710, lng: 20.452 },
+            { name: "Pskov", country: "Russia", lat: 57.819, lng: 28.332 },
+            { name: "Sosnovy Bor", country: "Russia", lat: 59.899, lng: 29.085 },
+            { name: "Saint Petersburg", country: "Russia", lat: 59.931, lng: 30.360 },
+            { name: "Vyborg", country: "Russia", lat: 60.709, lng: 28.751 },
+
+            // Lithuania
+            { name: "Vilnius", country: "Lithuania", lat: 54.687, lng: 25.279 },
+            { name: "Kaunas", country: "Lithuania", lat: 54.898, lng: 23.903 },
+            { name: "Utena", country: "Lithuania", lat: 55.497, lng: 25.598 },
+            { name: "Panevėžys", country: "Lithuania", lat: 55.734, lng: 24.360 },
+            { name: "Šiauliai", country: "Lithuania", lat: 55.934, lng: 23.316 },
+            { name: "Mažeikiai", country: "Lithuania", lat: 56.316, lng: 22.341 },
+            { name: "Klaipeda", country: "Lithuania", lat: 55.703, lng: 21.144 },
+
+            // Latvia
+            { name: "Riga", country: "Latvia", lat: 56.949, lng: 24.105 },
+            { name: "Daugavpils", country: "Latvia", lat: 55.875, lng: 26.536 },
+            { name: "Valmiera", country: "Latvia", lat: 57.538, lng: 25.426 },
+            { name: "Ventspils", country: "Latvia", lat: 57.389, lng: 21.561 },
+            { name: "Liepāja", country: "Latvia", lat: 56.505, lng: 21.010 },
+
+            // Estonia
+            { name: "Pärnu", country: "Estonia", lat: 58.385, lng: 24.497 },
+            { name: "Tartu", country: "Estonia", lat: 58.378, lng: 26.729 },
+            { name: "Narva", country: "Estonia", lat: 59.379, lng: 28.179 },
+            { name: "Kunda", country: "Estonia", lat: 59.505, lng: 26.529 },
+            { name: "Tallinn", country: "Estonia", lat: 59.437, lng: 24.753 },
+            { name: "Paldiski", country: "Estonia", lat: 59.352, lng: 24.053 },
+
+            // Finland
+            { name: "Kotka", country: "Finland", lat: 60.466, lng: 26.945 },
+            { name: "Kouvola", country: "Finland", lat: 60.868, lng: 26.704 },
+            { name: "Lahti", country: "Finland", lat: 60.982, lng: 25.661 },
+            { name: "Loviisa", country: "Finland", lat: 60.456, lng: 26.225 },
+            { name: "Helsinki", country: "Finland", lat: 60.169, lng: 24.938 },
+            { name: "Tampere", country: "Finland", lat: 61.497, lng: 23.760 },
+            { name: "Pori", country: "Finland", lat: 61.485, lng: 21.797 },
+            { name: "Olkiluoto", country: "Finland", lat: 61.236, lng: 21.439 },
+            { name: "Naantali", country: "Finland", lat: 60.467, lng: 22.026 },
+            { name: "Turku", country: "Finland", lat: 60.451, lng: 22.268 },
+            { name: "Lappeenranta", country: "Finland", lat: 61.058, lng: 28.186 },
+            { name: "Mikkeli", country: "Finland", lat: 61.688, lng: 27.272 },
+            { name: "Jyväskylä", country: "Finland", lat: 62.242, lng: 25.747 },
+            { name: "Kuopio", country: "Finland", lat: 62.892, lng: 27.677 },
+            { name: "Joensuu", country: "Finland", lat: 62.601, lng: 29.763 },
+            { name: "Vaasa", country: "Finland", lat: 63.095, lng: 21.615 },
+            { name: "Kokkola", country: "Finland", lat: 63.838, lng: 23.130 },
+            { name: "Kajaani", country: "Finland", lat: 64.224, lng: 27.728 },
+            { name: "Oulu", country: "Finland", lat: 65.012, lng: 25.468 },
+            { name: "Tornio", country: "Finland", lat: 65.848, lng: 24.146 },
+            { name: "Kuusamo", country: "Finland", lat: 65.964, lng: 29.173 },
+            { name: "Rovaniemi", country: "Finland", lat: 66.503, lng: 25.729 },
+            { name: "Ivalo", country: "Finland", lat: 68.659, lng: 27.538 },
+
+            // Sweden
+            { name: "Trelleborg", country: "Sweden", lat: 55.375, lng: 13.157 },
+            { name: "Malmö", country: "Sweden", lat: 55.605, lng: 13.003 },
+            { name: "Helsingborg", country: "Sweden", lat: 56.046, lng: 12.694 },
+            { name: "Karlskrona", country: "Sweden", lat: 56.161, lng: 15.586 },
+            { name: "Kalmar", country: "Sweden", lat: 56.663, lng: 16.356 },
+            { name: "Växjö", country: "Sweden", lat: 56.877, lng: 14.809 },
+            { name: "Jönköping", country: "Sweden", lat: 57.782, lng: 14.161 },
+            { name: "Gothenburg", country: "Sweden", lat: 57.708, lng: 11.974 },
+            { name: "Linköping", country: "Sweden", lat: 58.410, lng: 15.621 },
+            { name: "Nynäshamn", country: "Sweden", lat: 58.903, lng: 17.947 },
+            { name: "Södertälje", country: "Sweden", lat: 59.195, lng: 17.625 },
+            { name: "Stockholm", country: "Sweden", lat: 59.329, lng: 18.068 },
+            { name: "Kapellskär", country: "Sweden", lat: 59.718, lng: 19.062 },
+            { name: "Uppsala", country: "Sweden", lat: 59.858, lng: 17.638 },
+            { name: "Västerås", country: "Sweden", lat: 59.616, lng: 16.552 },
+            { name: "Örebro", country: "Sweden", lat: 59.275, lng: 15.213 },
+            { name: "Karlstad", country: "Sweden", lat: 59.379, lng: 13.503 },
+            { name: "Borlänge", country: "Sweden", lat: 60.485, lng: 15.437 },
+            { name: "Falun", country: "Sweden", lat: 60.606, lng: 15.635 },
+            { name: "Gävle", country: "Sweden", lat: 60.674, lng: 17.141 },
+            { name: "Sundsvall", country: "Sweden", lat: 62.390, lng: 17.306 },
+            { name: "Östersund", country: "Sweden", lat: 63.179, lng: 14.635 },
+            { name: "Örnsköldsvik", country: "Sweden", lat: 63.290, lng: 18.715 },
+            { name: "Umeå", country: "Sweden", lat: 63.825, lng: 20.263 },
+            { name: "Skellefteå", country: "Sweden", lat: 64.750, lng: 20.952 },
+            { name: "Arvidsjaur", country: "Sweden", lat: 65.590, lng: 19.169 },
+            { name: "Luleå", country: "Sweden", lat: 65.584, lng: 22.154 },
+            { name: "Haparanda", country: "Sweden", lat: 65.835, lng: 24.133 },
+            { name: "Kiruna", country: "Sweden", lat: 67.855, lng: 20.225 },
+            { name: "Karesuando", country: "Sweden", lat: 68.440, lng: 22.467 },
+
+            // Denmark
+            { name: "Hirtshals", country: "Denmark", lat: 57.588, lng: 9.959 },
+            { name: "Frederikshavn", country: "Denmark", lat: 57.441, lng: 10.536 },
+            { name: "Aalborg", country: "Denmark", lat: 57.048, lng: 9.918 },
+            { name: "Åhus", country: "Denmark", lat: 56.162, lng: 10.203 },
+            { name: "Odense", country: "Denmark", lat: 55.400, lng: 10.400 },
+            { name: "Esbjerg", country: "Denmark", lat: 55.476, lng: 8.459 },
+            { name: "Copenhagen", country: "Denmark", lat: 55.676, lng: 12.568 },
+            { name: "Gedsar", country: "Denmark", lat: 54.577, lng: 11.927 },
+
+            // Norway
+            { name: "Kristiansand", country: "Norway", lat: 58.159, lng: 8.018 },
+            { name: "Stavanger", country: "Norway", lat: 58.970, lng: 5.733 },
+            { name: "Bergen", country: "Norway", lat: 60.392, lng: 5.324 },
+            { name: "Oslo", country: "Norway", lat: 59.913, lng: 10.752 },
+            { name: "Hamar", country: "Norway", lat: 60.794, lng: 11.067 },
+            { name: "Lillehammer", country: "Norway", lat: 61.115, lng: 10.466 },
+            { name: "Dombås", country: "Norway", lat: 62.075, lng: 9.126 },
+            { name: "Honningsvåg", country: "Norway", lat: 70.982, lng: 25.970 },
+            { name: "Alta", country: "Norway", lat: 69.968, lng: 23.271 },
+            { name: "Tromsø", country: "Norway", lat: 69.649, lng: 18.955 },
+            { name: "Andenes", country: "Norway", lat: 69.314, lng: 16.119 },
+            { name: "Narvik", country: "Norway", lat: 68.438, lng: 17.427 },
+            { name: "Svolvær", country: "Norway", lat: 68.234, lng: 14.568 },
+            { name: "Bodø", country: "Norway", lat: 67.280, lng: 14.405 },
+            { name: "Mo i Rana", country: "Norway", lat: 66.312, lng: 14.142 },
+            { name: "Steinkjer", country: "Norway", lat: 64.014, lng: 11.495 },
+            { name: "Trondheim", country: "Norway", lat: 63.430, lng: 10.395 },
+            { name: "Kristiansund", country: "Norway", lat: 63.110, lng: 7.728 },
+            { name: "Ålesund", country: "Norway", lat: 62.472, lng: 6.154 }
+        ];
+
+        // Deduplicate and ID generation
+        const ETS2_CITIES = [];
+        const seenKeys = new Set();
+
+        ETS2_FULL_DATASET.forEach(city => {
+            const id = `${city.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${city.country.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+            if (!seenKeys.has(id)) {
+                seenKeys.add(id);
+                ETS2_CITIES.push({ ...city, id });
+            }
+        });
+
+        // App state
+        let visitedCities = new Set();
+        let map = null;
+        let markersMap = new Map();
+        const STORAGE_KEY = "ets2_town_checklist_v3";
+
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    visitedCities = new Set(JSON.parse(saved));
+                }
+            } catch (e) {
+                console.error("Failed to load saved progress:", e);
+            }
+        }
+
+        function saveProgress() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify([...visitedCities]));
+            } catch (e) {
+                console.error("Failed to save progress:", e);
+            }
+        }
+
+        function toggleCityVisited(cityId) {
+            if (visitedCities.has(cityId)) {
+                visitedCities.delete(cityId);
+            } else {
+                visitedCities.add(cityId);
+            }
+            saveProgress();
+            updateMarkerStyle(cityId);
+            updateStatsAndList();
+        }
+
+        function setCountryVisited(countryName, setVisited) {
+            ETS2_CITIES.forEach(city => {
+                if (city.country === countryName) {
+                    if (setVisited) visitedCities.add(city.id);
+                    else visitedCities.delete(city.id);
+                    updateMarkerStyle(city.id);
+                }
+            });
+            saveProgress();
+            updateStatsAndList();
+        }
+
+        // Map Setup
+        function initMap() {
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) return;
+
+            map = L.map('map', {
+                center: [54.0, 15.0],
+                zoom: 4,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+            // Esri Dark Gray Canvas (Primary)
+            const esriDarkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 16,
+                minZoom: 3,
+                attribution: 'Tiles &copy; Esri'
+            });
+
+            // OpenStreetMap Fallback
+            const osmFallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                minZoom: 3,
+                attribution: '&copy; OpenStreetMap contributors'
+            });
+
+            let hasFallenBack = false;
+            esriDarkLayer.on('tileerror', function() {
+                if (!hasFallenBack) {
+                    hasFallenBack = true;
+                    map.removeLayer(esriDarkLayer);
+                    osmFallbackLayer.addTo(map);
+                }
+            });
+
+            esriDarkLayer.addTo(map);
+
+            L.control.layers({
+                "Dark Canvas (Esri)": esriDarkLayer,
+                "OpenStreetMap": osmFallbackLayer
+            }, null, { position: 'bottomright' }).addTo(map);
+
+            // Populate Map Markers
+            ETS2_CITIES.forEach(city => {
+                const isVisited = visitedCities.has(city.id);
+
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div id="marker-${city.id}" class="city-marker ${isVisited ? 'city-marker-visited' : 'city-marker-unvisited'}">
+                            <div class="city-marker-inner"></div>
+                           </div>`,
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9]
+                });
+
+                const marker = L.marker([city.lat, city.lng], { icon: customIcon }).addTo(map);
+
+                marker.bindPopup(() => createPopupContent(city.id));
+                markersMap.set(city.id, marker);
+            });
+
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 250);
+        }
+
+        function createPopupContent(cityId) {
+            const city = ETS2_CITIES.find(c => c.id === cityId);
+            if (!city) return '';
+            const isVisited = visitedCities.has(cityId);
+
+            return `
+                <div class="text-center font-sans p-1">
+                    <div class="font-bold text-base text-slate-100">${city.name}</div>
+                    <div class="text-xs text-slate-400 mb-3"><span class="text-ets-orange font-semibold">${city.country}</span></div>
+                    <button onclick="toggleCityVisited('${city.id}')" 
+                        class="px-4 py-2 rounded-lg text-xs font-bold text-white transition flex items-center justify-center gap-2 w-full ${isVisited ? 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/30' : 'bg-ets-orange hover:bg-orange-500 shadow-lg shadow-orange-500/30'}">
+                        <i class="fa-solid ${isVisited ? 'fa-circle-check' : 'fa-circle'}"></i>
+                        <span>${isVisited ? 'Visited Town' : 'Mark as Visited'}</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function updateMarkerStyle(cityId) {
+            const isVisited = visitedCities.has(cityId);
+            const markerEl = document.getElementById(`marker-${cityId}`);
+            if (markerEl) {
+                markerEl.className = `city-marker ${isVisited ? 'city-marker-visited' : 'city-marker-unvisited'}`;
+            }
+
+            const marker = markersMap.get(cityId);
+            if (marker && marker.getPopup() && marker.getPopup().isOpen()) {
+                marker.getPopup().setContent(createPopupContent(cityId));
+            }
+        }
+
+        function populateCountryFilterOptions() {
+            const countryFilter = document.getElementById('country-filter');
+            const countries = [...new Set(ETS2_CITIES.map(c => c.country))].sort();
+
+            document.getElementById('country-count-badge').textContent = `${countries.length} Countries Loaded`;
+
+            countries.forEach(country => {
+                const opt = document.createElement('option');
+                opt.value = country;
+                opt.textContent = country;
+                countryFilter.appendChild(opt);
+            });
+        }
+
+        function updateStatsAndList() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+            const countryFilter = document.getElementById('country-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+
+            const totalCount = ETS2_CITIES.length;
+            const visitedCount = visitedCities.size;
+            const overallPct = Math.round((visitedCount / totalCount) * 100);
+
+            document.getElementById('visited-count').textContent = visitedCount;
+            document.getElementById('total-count').textContent = totalCount;
+            document.getElementById('overall-percentage').textContent = `${overallPct}%`;
+            document.getElementById('overall-progress-bar').style.width = `${overallPct}%`;
+
+            const countryGroups = {};
+
+            ETS2_CITIES.forEach(city => {
+                const matchesSearch = city.name.toLowerCase().includes(searchTerm) || city.country.toLowerCase().includes(searchTerm);
+                const matchesCountry = countryFilter === 'ALL' || city.country === countryFilter;
+                const isVisited = visitedCities.has(city.id);
+                const matchesStatus = statusFilter === 'ALL' || 
+                                     (statusFilter === 'VISITED' && isVisited) || 
+                                     (statusFilter === 'UNVISITED' && !isVisited);
+
+                if (matchesSearch && matchesCountry && matchesStatus) {
+                    if (!countryGroups[city.country]) countryGroups[city.country] = [];
+                    countryGroups[city.country].push(city);
+                }
+            });
+
+            const container = document.getElementById('city-list-container');
+            container.innerHTML = '';
+
+            const sortedCountries = Object.keys(countryGroups).sort();
+
+            if (sortedCountries.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-slate-500">
+                        <i class="fa-solid fa-map-location-dot text-3xl mb-3 opacity-40"></i>
+                        <p class="text-xs">No towns matched your search or filters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            sortedCountries.forEach(countryName => {
+                const citiesInGroup = countryGroups[countryName];
+                const allCountryCities = ETS2_CITIES.filter(c => c.country === countryName);
+                const visitedInCountry = allCountryCities.filter(c => visitedCities.has(c.id)).length;
+                const groupPct = Math.round((visitedInCountry / allCountryCities.length) * 100);
+
+                const groupEl = document.createElement('div');
+                groupEl.className = "bg-slate-900 border-b border-slate-800/80";
+
+                groupEl.innerHTML = `
+                    <div class="p-3 bg-slate-950/80 flex items-center justify-between sticky top-0 z-10 border-b border-slate-800 backdrop-blur">
+                        <div class="flex-1 pr-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-bold text-xs text-slate-200 uppercase tracking-wider">${countryName}</span>
+                                <span class="text-[11px] text-slate-400">${visitedInCountry} / ${allCountryCities.length} (${groupPct}%)</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: ${groupPct}%"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="setCountryVisited('${countryName.replace(/'/g, "\\'")}', true)" title="Mark all in ${countryName}" class="px-2 py-1 text-xs bg-slate-800 hover:bg-emerald-950 hover:text-emerald-400 text-slate-300 rounded border border-slate-700 transition">
+                                <i class="fa-solid fa-check"></i>
+                            </button>
+                            <button onclick="setCountryVisited('${countryName.replace(/'/g, "\\'")}', false)" title="Uncheck all in ${countryName}" class="px-2 py-1 text-xs bg-slate-800 hover:bg-red-950 hover:text-red-400 text-slate-300 rounded border border-slate-700 transition">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="divide-y divide-slate-800/40">
+                        ${citiesInGroup.map(city => {
+                            const isVisited = visitedCities.has(city.id);
+                            return `
+                                <div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-800/60 transition cursor-pointer group" onclick="focusCityOnMap('${city.id}')">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" ${isVisited ? 'checked' : ''} 
+                                            onclick="event.stopPropagation(); toggleCityVisited('${city.id}')"
+                                            class="w-4 h-4 rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-emerald-500/20 focus:ring-offset-slate-900 cursor-pointer">
+                                        <div>
+                                            <div class="text-xs font-semibold ${isVisited ? 'text-emerald-400 line-through opacity-75' : 'text-slate-200 group-hover:text-white'}">
+                                                ${city.name}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="text-slate-600 group-hover:text-ets-orange text-xs p-1">
+                                        <i class="fa-solid fa-location-crosshairs"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+
+                container.appendChild(groupEl);
+            });
+        }
+
+        function focusCityOnMap(cityId) {
+            const city = ETS2_CITIES.find(c => c.id === cityId);
+            const marker = markersMap.get(cityId);
+            if (city && marker) {
+                map.flyTo([city.lat, city.lng], 8, { duration: 1 });
+                marker.openPopup();
+            }
+        }
+
+        function exportProgress() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify([...visitedCities]));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `ets2_visited_towns_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importProgress(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        visitedCities = new Set(importedData);
+                        saveProgress();
+                        ETS2_CITIES.forEach(c => updateMarkerStyle(c.id));
+                        updateStatsAndList();
+                        alert('Town completion data imported successfully!');
+                    }
+                } catch (err) {
+                    alert('Invalid JSON file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProgress();
+            populateCountryFilterOptions();
+            initMap();
+            updateStatsAndList();
+
+            window.addEventListener('resize', () => {
+                if (map) map.invalidateSize();
+            });
+
+            const searchInput = document.getElementById('search-input');
+            const clearSearchBtn = document.getElementById('clear-search');
+
+            searchInput.addEventListener('input', () => {
+                clearSearchBtn.classList.toggle('hidden', searchInput.value.length === 0);
+                updateStatsAndList();
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                clearSearchBtn.classList.add('hidden');
+                updateStatsAndList();
+            });
+
+            document.getElementById('country-filter').addEventListener('change', updateStatsAndList);
+            document.getElementById('status-filter').addEventListener('change', updateStatsAndList);
+
+            document.getElementById('recenter-map-btn').addEventListener('click', () => {
+                map.flyTo([54.0, 15.0], 4, { duration: 1 });
+            });
+
+            document.getElementById('reset-all-btn').addEventListener('click', () => {
+                if (confirm('Clear all visited towns and start fresh?')) {
+                    visitedCities.clear();
+                    saveProgress();
+                    ETS2_CITIES.forEach(c => updateMarkerStyle(c.id));
+                    updateStatsAndList();
+                }
+            });
+
+            document.getElementById('export-btn').addEventListener('click', exportProgress);
+            document.getElementById('import-btn-trigger').addEventListener('click', () => {
+                document.getElementById('import-file-input').click();
+            });
+            document.getElementById('import-file-input').addEventListener('change', importProgress);
+        });
+    </script>
+</body>
+</html>
